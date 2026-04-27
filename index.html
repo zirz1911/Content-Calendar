@@ -663,8 +663,8 @@
         </div>
 
         <div class="header">
-            <h1 id="current-day-title" contenteditable="true" oninput="updateDayField('headline', this.innerText)">Day X: หัวข้อคลิป</h1>
-            <p id="current-day-desc" contenteditable="true" oninput="updateDayField('description', this.innerText)">รายละเอียด: แผนคลิป TikTok / Shorts</p>
+            <h1 id="current-day-title" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateDayField('headline', this.innerText)">Day X: หัวข้อคลิป</h1>
+            <p id="current-day-desc" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateDayField('description', this.innerText)">รายละเอียด: แผนคลิป TikTok / Shorts</p>
             <p class="empty-note">แก้ไขข้อความได้ทันที แล้วกด Save</p>
             <div class="cover-wrap">
                 <div class="cover-label">Cover Image</div>
@@ -893,6 +893,38 @@
             .replaceAll("'", "&#39;");
     }
 
+    function normalizeEditableText(text) {
+        return String(text || "")
+            .replaceAll("\u00a0", " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function isTemplateEditableText(text) {
+        return text === "พิมพ์บทพูดที่นี่..."
+            || text === "ข้อความบนจอ..."
+            || text === "Day X: หัวข้อคลิป"
+            || text === "รายละเอียด: แผนคลิป TikTok / Shorts"
+            || /^Shot \d+: \.\.\.$/.test(text);
+    }
+
+    function placeCaretAtEnd(element) {
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    function beginQuickEdit(element) {
+        const text = normalizeEditableText(element.innerText);
+        if (isTemplateEditableText(text)) {
+            element.innerText = "";
+            placeCaretAtEnd(element);
+        }
+    }
+
     function getCurrentDayState() {
         if (!currentDateKey) return null;
         const key = String(currentDateKey);
@@ -999,14 +1031,14 @@
                 <div class="shot-card">
                     <button type="button" class="delete-btn" onclick="removeShot(${index})">ลบ</button>
                     <div class="content-box">
-                        <p class="shot-title" contenteditable="true" oninput="updateShotField(${index}, 'title', this.innerText)">${escapeHtml(shot.title)}</p>
+                        <p class="shot-title" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateShotField(${index}, 'title', this.innerText)">${escapeHtml(shot.title)}</p>
                         <div>
                             <strong>🎬 บทพูด:</strong>
-                            <div class="script-area" contenteditable="true" oninput="updateShotField(${index}, 'speech', this.innerText)">${escapeHtml(shot.speech)}</div>
+                            <div class="script-area" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateShotField(${index}, 'speech', this.innerText)">${escapeHtml(shot.speech)}</div>
                         </div>
                         <div>
                             <strong>📝 Text บนจอ:</strong>
-                            <div class="script-area" contenteditable="true" oninput="updateShotField(${index}, 'onScreen', this.innerText)">${escapeHtml(shot.onScreen)}</div>
+                            <div class="script-area" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateShotField(${index}, 'onScreen', this.innerText)">${escapeHtml(shot.onScreen)}</div>
                         </div>
                         <div class="tags-container">
                             <select onchange="updateShotField(${index}, 'status', this.value)">
@@ -1167,7 +1199,7 @@
 
     function updateDayField(field, value) {
         const day = getCurrentDayState();
-        day[field] = value.trim() || day[field];
+        day[field] = value;
         queueSaveLabel();
     }
 
