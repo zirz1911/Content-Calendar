@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adstomate 30-Day Content Planner</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --border: #e5e7eb;
+            --success: #047857;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 { margin-top: 0; }
+        .text-center { text-align: center; }
+        .hidden { display: none !important; }
+        .calendar-header {
+            background: linear-gradient(135deg, var(--primary), #818cf8);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+        }
+        .grid-30days {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+        .day-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 110px;
+            position: relative;
+            overflow: hidden;
+        }
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+        .day-number {
+            font-weight: 900;
+            font-size: 24px;
+            color: #e0e7ff;
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            z-index: 0;
+        }
+        .day-title {
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 1;
+            margin-top: 5px;
+        }
+        .day-status {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #f3f4f6;
+            color: #6b7280;
+            width: fit-content;
+            margin-bottom: 5px;
+            z-index: 1;
+        }
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .nav-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        button {
+            border: 1px solid var(--border);
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        button:hover { background-color: #e5e7eb; }
+        .btn-primary {
+            border-color: var(--primary);
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .save-state {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .save-state.ok {
+            color: var(--success);
+            font-weight: 700;
+        }
+        .header {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary);
+        }
+        [contenteditable="true"] {
+            border-bottom: 1px dashed #ccc;
+            outline: none;
+            transition: all 0.2s;
+            padding: 2px 4px;
+        }
+        [contenteditable="true"]:focus {
+            border-bottom: 1px solid var(--primary);
+            background-color: #eef2ff;
+            border-radius: 4px;
+        }
+        .shots-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .shot-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 20px;
+            border-left: 4px solid #9ca3af;
+            position: relative;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+        .image-box {
+            width: 180px;
+            flex-shrink: 0;
+        }
+        .image-upload-area {
+            width: 100%;
+            height: 130px;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            background-color: #f9fafb;
+        }
+        .image-upload-area:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .image-upload-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: white;
+            display: none;
+        }
+        .image-upload-area img.has-image { display: block; }
+        .image-upload-area input[type="file"] { display: none; }
+        .upload-text.hidden { display: none; }
+        .content-box {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .shot-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin: 0;
+            color: var(--primary);
+        }
+        .script-area {
+            background: #f9fafb;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            min-height: 40px;
+        }
+        .tags-container {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+        select {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            outline: none;
+        }
+        .add-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--card-bg);
+            border: 2px dashed var(--primary);
+            color: var(--primary);
+            border-radius: 12px;
+            margin-top: 20px;
+            font-weight: 700;
+        }
+        .empty-note {
+            margin: 0;
+            color: #6b7280;
+            font-size: 13px;
+        }
+        @media (max-width: 760px) {
+            .shot-card { flex-direction: column; }
+            .image-box { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="calendar-view">
+        <div class="calendar-header">
+            <h1 class="text-center">📅 Adstomate 30-Day Content Plan</h1>
+            <p class="text-center" style="opacity: 0.9; margin: 0;">คลิกที่การ์ดแต่ละวันเพื่อแก้ไขและบันทึก Storyboard</p>
+        </div>
+        <div class="grid-30days" id="days-grid"></div>
+    </div>
+
+    <div id="storyboard-view" class="hidden">
+        <div class="nav-bar">
+            <div class="nav-group">
+                <button type="button" onclick="showCalendar()">⬅️ กลับหน้าปฏิทิน</button>
+                <button type="button" class="btn-primary" onclick="saveCurrentDay()">💾 Save</button>
+                <button type="button" onclick="resetCurrentDay()">↺ Reset Day</button>
+            </div>
+            <div id="save-state" class="save-state">ยังไม่บันทึก</div>
+        </div>
+
+        <div class="header">
+            <h1 id="current-day-title" contenteditable="true" oninput="updateDayField('headline', this.innerText)">Day X: หัวข้อคลิป</h1>
+            <p id="current-day-desc" contenteditable="true" oninput="updateDayField('description', this.innerText)">รายละเอียด: แผนคลิป TikTok / Shorts</p>
+            <p class="empty-note">แก้ไขข้อความได้ทันที แล้วกด Save</p>
+        </div>
+
+        <div class="shots-container" id="storyboard-container"></div>
+        <button type="button" class="add-btn" onclick="addShot()">+ เพิ่มช็อตใหม่ (Add New Shot)</button>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = "content_calendar_v1";
+    const plan30Days = [
+        "ท่าแปลกแก้บัญชีบิน", "เลิกใช้ Chrome/Safari ฟาร์ม", "Proxy คืออะไร?",
+        "วิธีเช็ค IP และลายนิ้วมือ", "จำลองคอม 100 เครื่อง", "mbasic ล็อกอินครั้งแรก",
+        "วอร์มบัญชีให้แข็งปั๋ง", "3 ข้อห้ามซื้อบัญชีใหม่", "Gemlogin ต่างจากปกติยังไง?",
+        "โดนแบน แก้ยื่นอุธรณ์ยังไง", "วิธีแบคอัพก่อนบัญชีปลิว", "Proxy ฟรี vs เสียตังค์",
+        "เลี้ยงเพจยังไงไม่ให้ปลิว", "ท่าแปลก: แยก Profile แอดมิน", "จัดการ 50 บัญชีไม่มึน",
+        "เปิดปิด เน็ตมือถือ โดนแบนไหม?", "User-Agent บอทดูอะไร?", "วิธีใช้ Cookie ไม่ต้องกรอกรหัส",
+        "ตั้งค่าเบราว์เซอร์ เทา vs ขาว", "อุปกรณ์ฟาร์มบัญชี", "สเกลแอด 10 เท่า",
+        "แชร์จอยังไงไม่ให้ IP หลุด", "วิธีเคลียร์ค่า 100%", "ยิงแอด ตปท. ใช้ Proxy ไร",
+        "รีวิว 1 วันคนดูแล 100 บัญชี", "สปอยล์ระบบ GemAutomate", "ปั้นบัญชีสำรองรอเสียบ",
+        "เช็คบัญชีย้อมแมว", "ศัพท์วงการฟาร์มแอด", "Q&A ตอบคำถามสายฟาร์ม"
+    ];
+
+    let appState = loadState();
+    let currentDay = null;
+    let saveTimer = null;
+
+    function defaultShot(idx) {
+        return {
+            title: "Shot " + idx + ": ...",
+            speech: "พิมพ์บทพูดที่นี่...",
+            onScreen: "ข้อความบนจอ...",
+            status: "Draft",
+            priority: "Priority",
+            image: ""
+        };
+    }
+
+    function defaultDay(dayNum, title) {
+        return {
+            headline: "Day " + dayNum + ": " + title,
+            description: "รายละเอียด: แผนคลิป TikTok / Shorts (คลิกแก้ไขได้)",
+            shots: [defaultShot(1)]
+        };
+    }
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) {
+                return { days: {} };
+            }
+            const parsed = JSON.parse(raw);
+            if (!parsed.days || typeof parsed.days !== "object") {
+                return { days: {} };
+            }
+            return parsed;
+        } catch (e) {
+            return { days: {} };
+        }
+    }
+
+    function persistState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        flashSaveState("บันทึกแล้ว");
+    }
+
+    function flashSaveState(text) {
+        const el = document.getElementById("save-state");
+        if (!el) return;
+        el.textContent = text;
+        el.classList.add("ok");
+        window.setTimeout(() => {
+            el.classList.remove("ok");
+        }, 700);
+    }
+
+    function queueSaveLabel() {
+        const el = document.getElementById("save-state");
+        if (!el) return;
+        el.textContent = "มีการแก้ไข ยังไม่ Save";
+        el.classList.remove("ok");
+        if (saveTimer) {
+            window.clearTimeout(saveTimer);
+        }
+        saveTimer = window.setTimeout(() => {
+            persistState();
+        }, 500);
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#39;");
+    }
+
+    function getCurrentDayState() {
+        if (!currentDay) return null;
+        const key = String(currentDay);
+        if (!appState.days[key]) {
+            appState.days[key] = defaultDay(currentDay, plan30Days[currentDay - 1]);
+        }
+        return appState.days[key];
+    }
+
+    function dayStatusLabel(dayData) {
+        if (!dayData || !dayData.shots || dayData.shots.length === 0) return "📍 Draft";
+        const total = dayData.shots.length;
+        const done = dayData.shots.filter((s) => s.status === "Done").length;
+        const ready = dayData.shots.filter((s) => s.status === "Ready").length;
+        if (done === total) return "✅ Done";
+        if (done > 0 || ready > 0) return "🟡 In Progress";
+        return "📍 Draft";
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById("days-grid");
+        grid.innerHTML = "";
+        plan30Days.forEach((title, index) => {
+            const dayNum = index + 1;
+            const dayData = appState.days[String(dayNum)];
+            const card = document.createElement("div");
+            card.className = "day-card";
+            card.onclick = () => showStoryboard(dayNum);
+            card.innerHTML = `
+                <div class="day-number">${dayNum}</div>
+                <div class="day-status">${escapeHtml(dayStatusLabel(dayData))}</div>
+                <div class="day-title">${escapeHtml(title)}</div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function renderShots() {
+        const container = document.getElementById("storyboard-container");
+        const day = getCurrentDayState();
+        container.innerHTML = "";
+
+        day.shots.forEach((shot, index) => {
+            const html = `
+                <div class="shot-card">
+                    <button type="button" class="delete-btn" onclick="removeShot(${index})">ลบ</button>
+                    <div class="image-box">
+                        <label class="image-upload-area">
+                            <span class="upload-text ${shot.image ? "hidden" : ""}">+ ใส่รูปภาพ</span>
+                            <input type="file" accept="image/*" onchange="handleImageUpload(${index}, this)">
+                            <img src="${escapeHtml(shot.image || "")}" alt="Preview" class="${shot.image ? "has-image" : ""}">
+                        </label>
+                    </div>
+                    <div class="content-box">
+                        <p class="shot-title" contenteditable="true" oninput="updateShotField(${index}, 'title', this.innerText)">${escapeHtml(shot.title)}</p>
+                        <div>
+                            <strong>🎬 บทพูด:</strong>
+                            <div class="script-area" contenteditable="true" oninput="updateShotField(${index}, 'speech', this.innerText)">${escapeHtml(shot.speech)}</div>
+                        </div>
+                        <div>
+                            <strong>📝 Text บนจอ:</strong>
+                            <div class="script-area" contenteditable="true" oninput="updateShotField(${index}, 'onScreen', this.innerText)">${escapeHtml(shot.onScreen)}</div>
+                        </div>
+                        <div class="tags-container">
+                            <select onchange="updateShotField(${index}, 'status', this.value)" style="background: #e0f2fe; color: #0369a1;">
+                                <option value="Draft" ${shot.status === "Draft" ? "selected" : ""}>📍 Draft</option>
+                                <option value="Ready" ${shot.status === "Ready" ? "selected" : ""}>📍 Ready</option>
+                                <option value="Done" ${shot.status === "Done" ? "selected" : ""}>📍 Done</option>
+                            </select>
+                            <select onchange="updateShotField(${index}, 'priority', this.value)" style="background: #fef3c7; color: #b45309;">
+                                <option value="Priority" ${shot.priority === "Priority" ? "selected" : ""}>⚡ Priority</option>
+                                <option value="High" ${shot.priority === "High" ? "selected" : ""}>🔥 High</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML("beforeend", html);
+        });
+    }
+
+    function showStoryboard(dayNum) {
+        currentDay = dayNum;
+        const day = getCurrentDayState();
+        document.getElementById("calendar-view").classList.add("hidden");
+        document.getElementById("storyboard-view").classList.remove("hidden");
+        document.getElementById("current-day-title").innerText = day.headline;
+        document.getElementById("current-day-desc").innerText = day.description;
+        document.getElementById("save-state").textContent = "พร้อมแก้ไข";
+        renderShots();
+        window.scrollTo(0, 0);
+    }
+
+    function showCalendar() {
+        currentDay = null;
+        document.getElementById("storyboard-view").classList.add("hidden");
+        document.getElementById("calendar-view").classList.remove("hidden");
+        renderCalendar();
+        window.scrollTo(0, 0);
+    }
+
+    function updateDayField(field, value) {
+        const day = getCurrentDayState();
+        day[field] = value.trim() || day[field];
+        queueSaveLabel();
+    }
+
+    function updateShotField(index, field, value) {
+        const day = getCurrentDayState();
+        if (!day.shots[index]) return;
+        day.shots[index][field] = value;
+        queueSaveLabel();
+    }
+
+    function addShot() {
+        const day = getCurrentDayState();
+        day.shots.push(defaultShot(day.shots.length + 1));
+        renderShots();
+        queueSaveLabel();
+    }
+
+    function removeShot(index) {
+        const day = getCurrentDayState();
+        if (day.shots.length <= 1) {
+            return;
+        }
+        day.shots.splice(index, 1);
+        renderShots();
+        queueSaveLabel();
+    }
+
+    function handleImageUpload(index, input) {
+        if (!input.files || !input.files[0]) {
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const day = getCurrentDayState();
+            day.shots[index].image = e.target.result;
+            renderShots();
+            queueSaveLabel();
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function saveCurrentDay() {
+        persistState();
+        renderCalendar();
+    }
+
+    function resetCurrentDay() {
+        if (!currentDay) return;
+        appState.days[String(currentDay)] = defaultDay(currentDay, plan30Days[currentDay - 1]);
+        renderShots();
+        queueSaveLabel();
+    }
+
+    window.onload = function() {
+        renderCalendar();
+    };
+</script>
+</body>
+</html>

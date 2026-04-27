@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adstomate 30-Day Content Planner</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --border: #E5E7EB;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        /* Typography */
+        h1 { margin-top: 0; }
+        .text-center { text-align: center; }
+
+        /* Views */
+        #calendar-view, #storyboard-view {
+            transition: opacity 0.3s ease;
+        }
+        .hidden { display: none !important; }
+
+        /* --- Calendar View Styles --- */
+        .calendar-header {
+            background: linear-gradient(135deg, var(--primary), #818CF8);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+        }
+        .grid-30days {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+        .day-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100px;
+            position: relative;
+            overflow: hidden;
+        }
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+        .day-number {
+            font-weight: 900;
+            font-size: 24px;
+            color: #E0E7FF;
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            z-index: 0;
+        }
+        .day-title {
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 1;
+            margin-top: 5px;
+        }
+        .day-status {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #F3F4F6;
+            color: #6B7280;
+            width: fit-content;
+            margin-bottom: 5px;
+            z-index: 1;
+        }
+
+        /* --- Storyboard View Styles --- */
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        .back-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .back-btn:hover { background-color: #E5E7EB; }
+        
+        .header {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary);
+        }
+
+        /* Editable areas */
+        [contenteditable="true"] {
+            border-bottom: 1px dashed #ccc;
+            outline: none;
+            transition: all 0.2s;
+            padding: 2px 4px;
+        }
+        [contenteditable="true"]:focus {
+            border-bottom: 1px solid var(--primary);
+            background-color: #EEF2FF;
+            border-radius: 4px;
+        }
+        
+        /* Board / Cards */
+        .shots-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .shot-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 20px;
+            border-left: 4px solid #9CA3AF;
+            position: relative;
+        }
+        
+        /* Image Upload Section */
+        .image-box { width: 180px; flex-shrink: 0; }
+        .image-upload-area {
+            width: 100%; height: 130px;
+            border: 2px dashed #D1D5DB; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: #9CA3AF; cursor: pointer; position: relative; overflow: hidden; background-color: #F9FAFB;
+        }
+        .image-upload-area:hover { border-color: var(--primary); color: var(--primary); }
+        .image-upload-area img { width: 100%; height: 100%; object-fit: contain; position: absolute; display: none; background-color: white; }
+        .image-upload-area input[type="file"] { display: none; }
+
+        /* Content Section */
+        .content-box { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
+        .shot-title { font-weight: bold; font-size: 16px; margin: 0; color: var(--primary); }
+        .script-area { background: #F9FAFB; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; min-height: 40px; }
+
+        /* Tags */
+        .tags-container { display: flex; gap: 10px; margin-top: auto; }
+        select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: bold; cursor: pointer; outline: none; }
+        .delete-btn { position: absolute; top: 10px; right: 10px; background: #FEE2E2; color: #DC2626; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 11px; }
+
+        /* Add Button */
+        .add-btn { width: 100%; padding: 15px; background: var(--card-bg); border: 2px dashed var(--primary); color: var(--primary); font-weight: bold; border-radius: 12px; cursor: pointer; margin-top: 20px; }
+        .add-btn:hover { background-color: #EEF2FF; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="calendar-view">
+        <div class="calendar-header">
+            <h1 class="text-center">📅 Adstomate 30-Day Content Plan</h1>
+            <p class="text-center" style="opacity: 0.9; margin:0;">คลิกที่การ์ดแต่ละวันเพื่อเข้าไปแก้ไข Storyboard และสคริปต์</p>
+        </div>
+        
+        <div class="grid-30days" id="days-grid">
+            </div>
+    </div>
+
+    <div id="storyboard-view" class="hidden">
+        <div class="nav-bar">
+            <button class="back-btn" onclick="showCalendar()">
+                ⬅️ กลับไปหน้าปฏิทิน
+            </button>
+        </div>
+
+        <div class="header">
+            <h1 id="current-day-title" contenteditable="true">Day X: หัวข้อคลิป</h1>
+            <p class="desc" contenteditable="true">รายละเอียด: แผนคลิป TikTok / Shorts (คลิกแก้ไขได้)</p>
+        </div>
+
+        <div class="shots-container" id="storyboard-container">
+            <div class="shot-card">
+                <button class="delete-btn" onclick="this.parentElement.remove()">ลบ</button>
+                <div class="image-box">
+                    <label class="image-upload-area">
+                        <span>+ ใส่รูปภาพ</span>
+                        <input type="file" accept="image/*" onchange="previewImage(this)">
+                        <img src="" alt="Preview">
+                    </label>
+                </div>
+                <div class="content-box">
+                    <p class="shot-title" contenteditable="true">Shot 1: Hook (0-3 วิ)</p>
+                    <div>
+                        <strong>🎬 บทพูด:</strong>
+                        <div class="script-area" contenteditable="true">พิมพ์บทพูดที่นี่...</div>
+                    </div>
+                    <div>
+                        <strong>📝 Text บนจอ:</strong>
+                        <div class="script-area" contenteditable="true">ข้อความบนจอ...</div>
+                    </div>
+                    <div class="tags-container">
+                        <select style="background: #E0F2FE; color: #0369A1;">
+                            <option>📍 Draft</option><option>📍 Ready</option><option>📍 Done</option>
+                        </select>
+                        <select style="background: #FEF3C7; color: #B45309;">
+                            <option>⚡ Priority</option><option>🔥 High</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="add-btn" onclick="addShot()">+ เพิ่มช็อตใหม่ (Add New Shot)</button>
+    </div>
+
+</div>
+
+<script>
+    // --- Data: หัวข้อแพลน 30 วัน ---
+    const plan30Days = [
+        "ท่าแปลกแก้บัญชีบิน", "เลิกใช้ Chrome/Safari ฟาร์ม", "Proxy คืออะไร?", 
+        "วิธีเช็ค IP และลายนิ้วมือ", "จำลองคอม 100 เครื่อง", "mbasic ล็อกอินครั้งแรก", 
+        "วอร์มบัญชีให้แข็งปั๋ง", "3 ข้อห้ามซื้อบัญชีใหม่", "Gemlogin ต่างจากปกติยังไง?", 
+        "โดนแบน แก้ยื่นอุธรณ์ยังไง", "วิธีแบคอัพก่อนบัญชีปลิว", "Proxy ฟรี vs เสียตังค์", 
+        "เลี้ยงเพจยังไงไม่ให้ปลิว", "ท่าแปลก: แยก Profile แอดมิน", "จัดการ 50 บัญชีไม่มึน", 
+        "เปิดปิด เน็ตมือถือ โดนแบนไหม?", "User-Agent บอทดูอะไร?", "วิธีใช้ Cookie ไม่ต้องกรอกรหัส", 
+        "ตั้งค่าเบราว์เซอร์ เทา vs ขาว", "อุปกรณ์ฟาร์มบัญชี", "สเกลแอด 10 เท่า", 
+        "แชร์จอยังไงไม่ให้ IP หลุด", "วิธีเคลียร์ค่า 100%", "ยิงแอด ตปท. ใช้ Proxy ไร", 
+        "รีวิว 1 วันคนดูแล 100 บัญชี", "สปอยล์ระบบ GemAutomate", "ปั้นบัญชีสำรองรอเสียบ", 
+        "เช็คบัญชีย้อมแมว", "ศัพท์วงการฟาร์มแอด", "Q&A ตอบคำถามสายฟาร์ม"
+    ];
+
+    // --- ฟังก์ชันตอนโหลดหน้าเว็บ (สร้างปฏิทิน) ---
+    window.onload = () => {
+        const grid = document.getElementById('days-grid');
+        plan30Days.forEach((title, index) => {
+            const dayNum = index + 1;
+            const card = document.createElement('div');
+            card.className = 'day-card';
+            card.onclick = () => showStoryboard(dayNum, title);
+            card.innerHTML = `
+                <div class="day-number">${dayNum}</div>
+                <div class="day-status">📍 รอเขียนสคริปต์</div>
+                <div class="day-title">${title}</div>
+            `;
+            grid.appendChild(card);
+        });
+    };
+
+    // --- ระบบเปลี่ยนหน้า (Navigation) ---
+    function showStoryboard(day, title) {
+        document.getElementById('calendar-view').classList.add('hidden');
+        document.getElementById('storyboard-view').classList.remove('hidden');
+        
+        // อัปเดตหัวข้อให้ตรงกับวันที่กดเข้ามา
+        document.getElementById('current-day-title').innerText = `Day ${day}: ${title}`;
+        
+        // (จริงๆ สามารถเขียนระบบ Save ข้อมูลลง LocalStorage ตรงนี้ได้ แต่เอาแบบ Basic ก่อน)
+        window.scrollTo(0, 0);
+    }
+
+    function showCalendar() {
+        document.getElementById('storyboard-view').classList.add('hidden');
+        document.getElementById('calendar-view').classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+
+    // --- ระบบ Storyboard ย่อย ---
+    let shotCount = 1;
+
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = input.nextElementSibling;
+                img.src = e.target.result;
+                img.style.display = 'block';
+                input.previousElementSibling.style.display = 'none'; // ซ่อน text '+ ใส่รูปภาพ'
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function addShot() {
+        shotCount++;
+        const container = document.getElementById('storyboard-container');
+        const html = `
+        <div class="shot-card">
+            <button class="delete-btn" onclick="this.parentElement.remove()">ลบ</button>
+            <div class="image-box">
+                <label class="image-upload-area">
+                    <span>+ ใส่รูปภาพ</span>
+                    <input type="file" accept="image/*" onchange="previewImage(this)">
+                    <img src="" alt="Preview">
+                </label>
+            </div>
+            <div class="content-box">
+                <p class="shot-title" contenteditable="true">Shot ${shotCount}: ...</p>
+                <div>
+                    <strong>🎬 บทพูด:</strong>
+                    <div class="script-area" contenteditable="true">พิมพ์บทพูดที่นี่...</div>
+                </div>
+                <div>
+                    <strong>📝 Text บนจอ:</strong>
+                    <div class="script-area" contenteditable="true">ข้อความบนจอ...</div>
+                </div>
+                <div class="tags-container">
+                    <select style="background: #E0F2FE; color: #0369A1;">
+                        <option>📍 Draft</option><option>📍 Ready</option><option>📍 Done</option>
+                    </select>
+                    <select style="background: #FEF3C7; color: #B45309;">
+                        <option>⚡ Priority</option><option>🔥 High</option>
+                    </select>
+                </div>
+            </div>
+        </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+    }
+</script>
+
+</body>
+</html>
