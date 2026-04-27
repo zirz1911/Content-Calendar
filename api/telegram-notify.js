@@ -1,10 +1,13 @@
+const FALLBACK_BOT_TOKEN = "8612915066:AAHdr5xmf1fZsUFNlQ0rN1n1XJMPJgg2vvo";
+const FALLBACK_CHAT_ID = "8190607091";
+
 module.exports = async function handler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN || FALLBACK_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID || FALLBACK_CHAT_ID;
 
     let body = req.body;
     if (typeof body === "string") {
