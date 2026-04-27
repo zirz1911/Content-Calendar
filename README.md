@@ -24,6 +24,18 @@ Open `index.html` in your browser.
 
 1. Push this folder to a git repo.
 2. Import the repo in Vercel.
-3. Deploy (no build command needed).
+3. Add environment variables in Vercel Project Settings:
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_CHAT_ID`
+4. Deploy (no build command needed).
 
-This project is configured as a static site using `vercel.json`.
+This project uses `vercel.json` with:
+- static frontend (`index.html`)
+- serverless API route (`/api/telegram-notify`) for Telegram notifications
+
+## Telegram notifications
+
+- Notifications are sent when:
+  - you add a content item
+  - you click **Save** on content edits
+- UI shows only send result status: **Send Success** or **Send Fail**

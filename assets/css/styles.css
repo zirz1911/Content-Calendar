@@ -279,6 +279,30 @@
             flex-wrap: wrap;
         }
 
+        .telegram-controls {
+            justify-content: flex-end;
+            gap: 0.7rem;
+        }
+
+        .telegram-state {
+            font-size: 0.72rem;
+            color: var(--muted);
+            padding: 0.24rem 0.5rem;
+            border: 1px solid var(--line-2);
+            border-radius: 999px;
+            background: #1b1b1b;
+        }
+
+        .telegram-state.ok {
+            color: var(--accent);
+            border-color: rgba(0, 220, 130, 0.55);
+        }
+
+        .telegram-state.err {
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
         button {
             border: 1px solid var(--line-2);
             background-color: #2a2a2a;
@@ -785,4 +809,5 @@
             .calendar-footer-controls { justify-content: flex-end; }
             .day-number { width: 1.45rem; height: 1.45rem; font-size: 0.8rem; }
             .post-badge, .content-day-tag { font-size: 0.52rem; }
+            .telegram-controls { width: 100%; justify-content: flex-start; }
         }

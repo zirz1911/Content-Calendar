@@ -42,6 +42,7 @@
     let actionDateKey = null;
     let viewedMonth = new Date(CONTENT_START_DATE.getFullYear(), CONTENT_START_DATE.getMonth(), 1);
     let saveTimer = null;
+    let pendingEditNotification = null;
 
     function newId(prefix) {
         return prefix + "_" + Math.random().toString(36).slice(2, 10);
@@ -190,9 +191,97 @@
         }
     }
 
-    function persistState() {
+    function setTelegramState(state) {
+        const el = document.getElementById("telegram-state");
+        if (!el) return;
+        if (!state) {
+            el.textContent = "";
+            el.classList.add("hidden");
+            el.classList.remove("ok", "err");
+            return;
+        }
+        el.classList.remove("hidden");
+        el.textContent = state === "success" ? "Send Success" : "Send Fail";
+        el.classList.remove("ok", "err");
+        if (state === "success") el.classList.add("ok");
+        if (state === "fail") el.classList.add("err");
+    }
+
+    function formatPlatforms(platforms) {
+        if (!Array.isArray(platforms) || platforms.length === 0) return "-";
+        return platforms.join(", ");
+    }
+
+    function buildContentPayload(dateKey, content, reason) {
+        if (!dateKey || !content) return null;
+        return {
+            reason: reason || "edited",
+            dateKey: dateKey,
+            dateLabel: formatContentDate(parseDateKey(dateKey)),
+            headline: normalizeEditableText(content.headline) || "Untitled Content",
+            type: normalizeContentType(content.type),
+            status: content.status || "Draft",
+            priority: content.priority || "Priority",
+            platforms: Array.isArray(content.platforms) ? content.platforms.slice() : []
+        };
+    }
+
+    function getCurrentContentPayload(reason) {
+        const dateKey = resolveDateKey(currentDateKey);
+        const content = getCurrentContent();
+        return buildContentPayload(dateKey, content, reason);
+    }
+
+    function buildTelegramMessage(action, payload) {
+        let header = "✏️ Content Edited";
+        if (action === "add") {
+            header = "➕ Content Added";
+        } else if (action === "save") {
+            header = "💾 Content Saved";
+        }
+        return [
+            header,
+            "Date: " + payload.dateLabel + " (" + payload.dateKey + ")",
+            "Headline: " + payload.headline,
+            "Type: " + payload.type,
+            "Status: " + payload.status,
+            "Priority: " + payload.priority,
+            "Platforms: " + formatPlatforms(payload.platforms)
+        ].join("\n");
+    }
+
+    async function sendTelegramNotification(action, payload) {
+        if (!payload) return;
+        try {
+            const response = await fetch("/api/telegram-notify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: buildTelegramMessage(action, payload)
+                })
+            });
+            if (!response.ok) {
+                throw new Error("Request failed: " + response.status);
+            }
+            setTelegramState("success");
+        } catch (e) {
+            setTelegramState("fail");
+        }
+    }
+
+    function markPendingEditNotification(reason) {
+        pendingEditNotification = getCurrentContentPayload(reason || "edited");
+    }
+
+    function persistState(sendEditNotification) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
         flashSaveState("บันทึกแล้ว");
+        if (sendEditNotification && pendingEditNotification) {
+            const payload = pendingEditNotification;
+            pendingEditNotification = null;
+            const action = payload.reason === "saved" ? "save" : "edit";
+            sendTelegramNotification(action, payload);
+        }
     }
 
     function flashSaveState(text) {
@@ -205,7 +294,10 @@
         }, 700);
     }
 
-    function queueSaveLabel() {
+    function queueSaveLabel(markAsEdit) {
+        if (markAsEdit) {
+            markPendingEditNotification("edited");
+        }
         const el = document.getElementById("save-state");
         if (!el) return;
         el.textContent = "มีการแก้ไข ยังไม่ Save";
@@ -214,7 +306,7 @@
             window.clearTimeout(saveTimer);
         }
         saveTimer = window.setTimeout(() => {
-            persistState();
+            persistState(false);
         }, 500);
     }
 
@@ -513,7 +605,7 @@
         if (!day.contents.some((content) => content.id === contentId)) return;
         day.selectedContentId = contentId;
         renderEditorContent();
-        queueSaveLabel();
+        queueSaveLabel(false);
     }
 
     function addContentItem() {
@@ -524,7 +616,9 @@
         day.selectedContentId = newContent.id;
         renderEditorContent();
         renderCalendar();
-        queueSaveLabel();
+        const payload = buildContentPayload(resolveDateKey(currentDateKey), newContent, "added");
+        sendTelegramNotification("add", payload);
+        queueSaveLabel(false);
     }
 
     function removeCurrentContent() {
@@ -536,7 +630,7 @@
         day.selectedContentId = day.contents[Math.max(0, removeIdx - 1)].id;
         renderEditorContent();
         renderCalendar();
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     function renderPlatformControls() {
@@ -574,7 +668,7 @@
         } else {
             content.platforms = content.platforms.filter((item) => item !== platform);
         }
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     function renderShots() {
@@ -862,7 +956,7 @@
         if (!content) return;
         content[field] = value;
         renderContentSelector();
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     function updateDayMeta(field, value) {
@@ -870,7 +964,7 @@
         if (!content) return;
         content[field] = value;
         renderCalendar();
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     function updateContentType(value) {
@@ -888,14 +982,14 @@
 
         renderEditorContent();
         renderCalendar();
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     function updateShotField(index, field, value) {
         const content = getCurrentContent();
         if (!content || normalizeContentType(content.type) !== "Video" || !content.shots[index]) return;
         content.shots[index][field] = value;
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     function addShot() {
@@ -903,7 +997,7 @@
         if (!content || normalizeContentType(content.type) !== "Video") return;
         content.shots.push(defaultShot(content.shots.length + 1));
         renderShots();
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     function removeShot(index) {
@@ -913,7 +1007,7 @@
         }
         content.shots.splice(index, 1);
         renderShots();
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     function handleCoverUpload(input) {
@@ -931,7 +1025,7 @@
             if (!content || !getTypeMeta(content.type).showCover) return;
             content.coverImage = e.target.result;
             renderCover();
-            queueSaveLabel();
+            queueSaveLabel(true);
         };
         reader.readAsDataURL(input.files[0]);
     }
@@ -941,11 +1035,12 @@
         if (!content) return;
         content.coverImage = "";
         renderCover();
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     function saveCurrentDay() {
-        persistState();
+        markPendingEditNotification("saved");
+        persistState(true);
         renderCalendar();
     }
 
@@ -955,9 +1050,10 @@
         appState.days[key] = defaultDay(key);
         renderEditorContent();
         renderCalendar();
-        queueSaveLabel();
+        queueSaveLabel(true);
     }
 
     window.onload = function() {
+        setTelegramState("");
         renderCalendar();
     };
