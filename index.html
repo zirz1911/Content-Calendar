@@ -5,269 +5,657 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adstomate 30-Day Content Planner</title>
     <style>
+        @import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Inter:wght@400;500;600;700&display=swap");
+
         :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-main: #1f2937;
-            --border: #e5e7eb;
-            --success: #047857;
+            --bg: #0a0a0a;
+            --panel: #0f0f0f;
+            --surface: #1e1e1e;
+            --surface-soft: #252525;
+            --line: #333333;
+            --line-2: #444444;
+            --text: #e0e0e0;
+            --muted: #9ca3af;
+            --accent: oklch(0.85 0.2 142);
+            --accent-soft: rgba(0, 220, 130, 0.15);
         }
-        * { box-sizing: border-box; }
-        body {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
+
+        * {
+            box-sizing: border-box;
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: "Inter", sans-serif;
+            padding: 2rem;
+        }
+
         .container {
-            max-width: 1000px;
+            max-width: 1380px;
             margin: 0 auto;
+            background-color: var(--panel);
+            padding: 1.75rem;
+            border-radius: 1rem;
+            box-shadow: 0 0 30px rgba(0, 220, 130, 0.1);
+            border: 1px solid oklch(0.85 0.2 142 / 0.3);
         }
-        h1 { margin-top: 0; }
-        .text-center { text-align: center; }
+
         .hidden { display: none !important; }
-        .calendar-header {
-            background: linear-gradient(135deg, var(--primary), #818cf8);
-            color: white;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+
+        .calendar-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
         }
-        .grid-30days {
+
+        .brand-title {
+            font-family: "Silkscreen", sans-serif;
+            font-size: 1.55rem;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .brand-icon {
+            color: var(--accent);
+            text-shadow: 0 0 10px oklch(0.85 0.2 142 / 0.5);
+        }
+
+        .month-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .calendar-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .calendar-footer-controls {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0.55rem;
+            margin-top: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .calendar-shell {
+            width: 100%;
+            overflow-x: visible;
+        }
+
+        .calendar-shell-inner {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .calendar-weekdays {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 1px;
+            background-color: var(--line);
+            border: 1px solid var(--line);
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            overflow: hidden;
+            width: 100%;
         }
-        .day-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 15px;
+
+        .calendar-weekdays div {
+            background-color: #222222;
+            padding: 0.7rem 0;
+            text-align: center;
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 1px;
+            background-color: var(--line);
+            border-left: 1px solid var(--line);
+            border-right: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .day-cell {
+            background-color: var(--surface);
+            min-height: 118px;
+            height: 118px;
+            padding: 0.55rem;
+            transition: all 0.2s ease;
             cursor: pointer;
-            transition: all 0.2s;
+            border: 1px solid transparent;
+            position: relative;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            min-height: 110px;
-            position: relative;
+            gap: 0.28rem;
             overflow: hidden;
         }
-        .day-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            border-color: var(--primary);
+
+        .day-cell:hover {
+            background-color: #1a1a1a;
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(0, 220, 130, 0.2);
         }
+
+        .day-cell.no-content {
+            cursor: default;
+            opacity: 0.78;
+        }
+
+        .day-cell.no-content:hover {
+            border-color: transparent;
+            box-shadow: none;
+            background-color: var(--surface);
+        }
+
+        .day-cell.ghost {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .day-cell.ghost:hover {
+            border-color: transparent;
+            box-shadow: none;
+            background-color: var(--surface);
+        }
+
         .day-number {
-            font-weight: 900;
-            font-size: 24px;
-            color: #e0e7ff;
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            z-index: 0;
+            color: var(--muted);
+            font-weight: 500;
+            font-size: 0.92rem;
+            width: 1.7rem;
+            height: 1.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
         }
-        .day-title {
-            font-size: 14px;
-            font-weight: bold;
-            z-index: 1;
-            margin-top: 5px;
+
+        .day-number.today {
+            background-color: var(--accent);
+            color: #000000;
+            font-weight: 700;
+            box-shadow: 0 0 15px oklch(0.85 0.2 142 / 0.6);
         }
-        .day-status {
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: #f3f4f6;
-            color: #6b7280;
+
+        .post-badge {
+            margin-top: 0.15rem;
+            font-size: 0.62rem;
+            background-color: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid rgba(0, 220, 130, 0.4);
+            padding: 0.18rem 0.4rem;
+            border-radius: 0.3rem;
             width: fit-content;
-            margin-bottom: 5px;
+            box-shadow: 0 0 8px rgba(0, 220, 130, 0.3);
             z-index: 1;
         }
+
+        .post-badge.warn {
+            color: #f59e0b;
+            border-color: rgba(245, 158, 11, 0.5);
+            background: rgba(245, 158, 11, 0.15);
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
+        }
+
+        .post-badge.muted {
+            color: #93c5fd;
+            border-color: rgba(147, 197, 253, 0.45);
+            background: rgba(147, 197, 253, 0.13);
+            box-shadow: 0 0 8px rgba(147, 197, 253, 0.2);
+        }
+
+        .content-day-tag {
+            font-size: 0.58rem;
+            color: #d1fae5;
+            background: rgba(16, 185, 129, 0.16);
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            border-radius: 999px;
+            padding: 0.1rem 0.35rem;
+            width: fit-content;
+            font-weight: 700;
+            margin-top: 0.05rem;
+        }
+
+        .day-title {
+            font-size: 0.68rem;
+            color: #d1d5db;
+            line-height: 1.2;
+            max-height: 2.4em;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .add-post-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 220, 130, 0.1);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .day-cell:hover .add-post-overlay {
+            opacity: 1;
+        }
+
+        .add-post-btn {
+            background-color: var(--accent);
+            color: #000000;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.24rem 0.52rem;
+            border-radius: 0.35rem;
+            box-shadow: 0 0 10px rgba(0, 220, 130, 0.4);
+        }
+
         .nav-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
-            gap: 12px;
+            margin-bottom: 1.15rem;
+            gap: 0.8rem;
             flex-wrap: wrap;
         }
+
         .nav-group {
             display: flex;
-            gap: 10px;
             align-items: center;
+            gap: 0.55rem;
+            flex-wrap: wrap;
         }
+
         button {
-            border: 1px solid var(--border);
-            background-color: var(--card-bg);
-            border-radius: 8px;
-            padding: 8px 14px;
+            border: 1px solid var(--line-2);
+            background-color: #2a2a2a;
+            color: var(--text);
+            border-radius: 0.65rem;
+            padding: 0.58rem 0.85rem;
+            font-weight: 700;
             cursor: pointer;
-            font-weight: 700;
+            transition: all 0.2s ease;
         }
-        button:hover { background-color: #e5e7eb; }
+
+        button:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 8px rgba(0, 220, 130, 0.15);
+        }
+
         .btn-primary {
-            border-color: var(--primary);
-            background-color: var(--primary);
-            color: white;
+            background-color: var(--accent);
+            color: #000000;
+            border: 1px solid transparent;
+            box-shadow: 0 0 12px rgba(0, 220, 130, 0.28);
         }
-        .btn-primary:hover { background-color: var(--primary-hover); }
+
+        .btn-primary:hover {
+            background-color: oklch(0.8 0.25 142);
+            box-shadow: 0 0 18px rgba(0, 220, 130, 0.4);
+        }
+
         .save-state {
-            font-size: 12px;
-            color: #6b7280;
+            font-size: 0.78rem;
+            color: var(--muted);
         }
+
         .save-state.ok {
-            color: var(--success);
+            color: var(--accent);
             font-weight: 700;
         }
+
         .header {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            border-left: 5px solid var(--primary);
+            background-color: var(--surface);
+            padding: 1rem;
+            border-radius: 0.9rem;
+            border: 1px solid var(--line);
+            margin-bottom: 1rem;
         }
-        [contenteditable="true"] {
-            border-bottom: 1px dashed #ccc;
-            outline: none;
-            transition: all 0.2s;
-            padding: 2px 4px;
-        }
-        [contenteditable="true"]:focus {
-            border-bottom: 1px solid var(--primary);
-            background-color: #eef2ff;
-            border-radius: 4px;
-        }
-        .shots-container {
+
+        .cover-wrap {
+            margin-top: 0.8rem;
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
-        .shot-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
-            display: flex;
-            gap: 20px;
-            border-left: 4px solid #9ca3af;
-            position: relative;
+
+        .cover-label {
+            font-size: 0.78rem;
+            color: var(--muted);
+            font-weight: 700;
+            min-width: 92px;
         }
-        .delete-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #fee2e2;
-            color: #dc2626;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-size: 11px;
-        }
-        .image-box {
-            width: 180px;
-            flex-shrink: 0;
-        }
-        .image-upload-area {
-            width: 100%;
-            height: 130px;
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
+
+        .cover-upload {
+            width: 210px;
+            height: 118px;
+            border: 2px dashed var(--line-2);
+            border-radius: 0.75rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #9ca3af;
+            color: var(--muted);
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            background-color: #f9fafb;
+            background-color: #161616;
         }
-        .image-upload-area:hover {
-            border-color: var(--primary);
-            color: var(--primary);
+
+        .cover-upload:hover {
+            border-color: var(--accent);
+            color: var(--accent);
         }
-        .image-upload-area img {
+
+        .cover-upload input[type="file"] { display: none; }
+
+        .cover-upload img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            background-color: white;
+            object-fit: cover;
+            background-color: #0d0d0d;
             display: none;
         }
-        .image-upload-area img.has-image { display: block; }
-        .image-upload-area input[type="file"] { display: none; }
+
+        .cover-upload img.has-image { display: block; }
         .upload-text.hidden { display: none; }
+
+        [contenteditable="true"] {
+            border-bottom: 1px dashed #4b5563;
+            outline: none;
+            padding: 2px 4px;
+        }
+
+        [contenteditable="true"]:focus {
+            border-bottom: 1px solid var(--accent);
+            background-color: #1f2937;
+            border-radius: 4px;
+        }
+
+        #current-day-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.4rem;
+        }
+
+        #current-day-desc {
+            color: #d1d5db;
+            margin-bottom: 0.4rem;
+        }
+
+        .empty-note {
+            margin: 0;
+            color: #9ca3af;
+            font-size: 0.8rem;
+        }
+
+        .shots-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.95rem;
+        }
+
+        .shot-card {
+            background-color: var(--surface);
+            border-radius: 0.9rem;
+            padding: 1rem;
+            border: 1px solid var(--line);
+            display: flex;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 0.7rem;
+            right: 0.7rem;
+            padding: 0.28rem 0.58rem;
+            border-radius: 0.4rem;
+            font-size: 0.7rem;
+            background: rgba(239, 68, 68, 0.18);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
         .content-box {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 0.55rem;
         }
+
         .shot-title {
-            font-weight: bold;
-            font-size: 16px;
             margin: 0;
-            color: var(--primary);
+            font-weight: 700;
+            color: var(--accent);
         }
+
         .script-area {
-            background: #f9fafb;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            font-size: 14px;
-            min-height: 40px;
+            background: var(--surface-soft);
+            padding: 0.55rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--line-2);
+            font-size: 0.9rem;
+            min-height: 2.2rem;
         }
+
         .tags-container {
             display: flex;
-            gap: 10px;
+            gap: 0.6rem;
             margin-top: auto;
+            flex-wrap: wrap;
         }
+
         select {
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            font-size: 12px;
+            padding: 0.36rem 0.58rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--line-2);
+            font-size: 0.75rem;
             font-weight: 700;
-            cursor: pointer;
+            color: var(--text);
+            background: #2a2a2a;
             outline: none;
+            cursor: pointer;
         }
+
         .add-btn {
             width: 100%;
-            padding: 15px;
-            background: var(--card-bg);
-            border: 2px dashed var(--primary);
-            color: var(--primary);
-            border-radius: 12px;
-            margin-top: 20px;
+            margin-top: 0.95rem;
+            padding: 0.9rem;
+            border-radius: 0.75rem;
+            border: 2px dashed rgba(0, 220, 130, 0.5);
+            color: var(--accent);
+            background: #151515;
             font-weight: 700;
         }
-        .empty-note {
-            margin: 0;
-            color: #6b7280;
-            font-size: 13px;
+
+        .add-btn:hover {
+            background: rgba(0, 220, 130, 0.08);
         }
+
+        .action-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .action-panel {
+            width: 100%;
+            max-width: 360px;
+            background: #171717;
+            border: 1px solid var(--line-2);
+            border-radius: 0.85rem;
+            padding: 1rem;
+            box-shadow: 0 0 25px rgba(0, 220, 130, 0.15);
+        }
+
+        .action-title {
+            font-size: 1.05rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .action-sub {
+            color: var(--muted);
+            font-size: 0.84rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.55rem;
+            margin-bottom: 0.55rem;
+        }
+
+        .view-cover-wrap {
+            margin-top: 0.8rem;
+        }
+
+        .view-cover-wrap img {
+            width: 100%;
+            max-width: 480px;
+            border: 1px solid var(--line);
+            border-radius: 0.75rem;
+            display: block;
+        }
+
+        .read-shot-card {
+            background-color: var(--surface);
+            border-radius: 0.9rem;
+            border: 1px solid var(--line);
+            padding: 1rem;
+        }
+
+        .read-shot-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.6rem;
+        }
+
+        .read-shot-title {
+            margin: 0;
+            color: var(--accent);
+            font-size: 0.98rem;
+        }
+
+        .read-shot-badges {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .mini-badge {
+            font-size: 0.68rem;
+            padding: 0.18rem 0.45rem;
+            border-radius: 999px;
+            background: #262626;
+            border: 1px solid var(--line-2);
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .read-row {
+            margin-bottom: 0.55rem;
+        }
+
+        .read-row strong {
+            color: #d1d5db;
+            font-size: 0.82rem;
+            display: block;
+            margin-bottom: 0.22rem;
+        }
+
+        .read-row p {
+            margin: 0;
+            background: var(--surface-soft);
+            border: 1px solid var(--line-2);
+            border-radius: 0.5rem;
+            padding: 0.55rem;
+            font-size: 0.9rem;
+            line-height: 1.35;
+            white-space: normal;
+            word-break: break-word;
+        }
+
         @media (max-width: 760px) {
+            body { padding: 1rem; }
             .shot-card { flex-direction: column; }
-            .image-box { width: 100%; }
+            .container { padding: 1rem; }
+            .day-cell { min-height: 92px; height: 92px; padding: 0.42rem; }
+            .day-title { font-size: 0.58rem; max-height: 2.3em; }
+            .cover-wrap { align-items: flex-start; }
+            .cover-label { min-width: auto; width: 100%; }
+            .cover-upload { width: 100%; max-width: 320px; }
+            .action-buttons { grid-template-columns: 1fr; }
+            .calendar-controls { width: 100%; justify-content: flex-start; }
+            .calendar-footer-controls { justify-content: flex-end; }
+            .day-number { width: 1.45rem; height: 1.45rem; font-size: 0.8rem; }
+            .post-badge, .content-day-tag { font-size: 0.52rem; }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div id="calendar-view">
-        <div class="calendar-header">
-            <h1 class="text-center">📅 Adstomate 30-Day Content Plan</h1>
-            <p class="text-center" style="opacity: 0.9; margin: 0;">คลิกที่การ์ดแต่ละวันเพื่อแก้ไขและบันทึก Storyboard</p>
+        <div class="calendar-topbar">
+            <h1 class="brand-title"><span class="brand-icon">◉</span> Adstomate Content Calendar</h1>
+            <div class="calendar-controls">
+                <div id="month-label" class="month-label">APRIL 2026</div>
+            </div>
         </div>
-        <div class="grid-30days" id="days-grid"></div>
+        <div class="calendar-shell">
+            <div class="calendar-shell-inner">
+                <div class="calendar-weekdays">
+                    <div>Sun</div>
+                    <div>Mon</div>
+                    <div>Tue</div>
+                    <div>Wed</div>
+                    <div>Thu</div>
+                    <div>Fri</div>
+                    <div>Sat</div>
+                </div>
+                <div id="days-grid" class="calendar-grid"></div>
+            </div>
+        </div>
+        <div class="calendar-footer-controls">
+            <button type="button" onclick="prevMonth()">⬅ Previous Month</button>
+            <button type="button" onclick="goToCurrentDay()">Current Day</button>
+            <button type="button" onclick="nextMonth()">Next Month ➜</button>
+        </div>
     </div>
 
     <div id="storyboard-view" class="hidden">
         <div class="nav-bar">
             <div class="nav-group">
                 <button type="button" onclick="showCalendar()">⬅️ กลับหน้าปฏิทิน</button>
+                <button type="button" onclick="showContent(currentDateKey)">👁 See Content</button>
                 <button type="button" class="btn-primary" onclick="saveCurrentDay()">💾 Save</button>
                 <button type="button" onclick="resetCurrentDay()">↺ Reset Day</button>
             </div>
@@ -278,10 +666,50 @@
             <h1 id="current-day-title" contenteditable="true" oninput="updateDayField('headline', this.innerText)">Day X: หัวข้อคลิป</h1>
             <p id="current-day-desc" contenteditable="true" oninput="updateDayField('description', this.innerText)">รายละเอียด: แผนคลิป TikTok / Shorts</p>
             <p class="empty-note">แก้ไขข้อความได้ทันที แล้วกด Save</p>
+            <div class="cover-wrap">
+                <div class="cover-label">Cover Image</div>
+                <label class="cover-upload">
+                    <span id="cover-upload-text" class="upload-text">+ Add cover image</span>
+                    <input id="cover-input" type="file" accept="image/*" onchange="handleCoverUpload(this)">
+                    <img id="cover-preview" src="" alt="Content cover">
+                </label>
+                <button id="cover-remove-btn" type="button" class="hidden" onclick="clearCoverImage()">Remove Cover</button>
+            </div>
         </div>
 
         <div class="shots-container" id="storyboard-container"></div>
         <button type="button" class="add-btn" onclick="addShot()">+ เพิ่มช็อตใหม่ (Add New Shot)</button>
+    </div>
+
+    <div id="content-view" class="hidden">
+        <div class="nav-bar">
+            <div class="nav-group">
+                <button type="button" onclick="showCalendar()">⬅️ กลับหน้าปฏิทิน</button>
+                <button type="button" class="btn-primary" onclick="showStoryboard(currentDateKey)">✏️ Edit</button>
+            </div>
+        </div>
+
+        <div class="header">
+            <h1 id="view-day-title">Day X</h1>
+            <p id="view-day-desc">รายละเอียด</p>
+            <div id="view-cover-wrap" class="view-cover-wrap hidden">
+                <img id="view-cover-image" src="" alt="Content cover image">
+            </div>
+        </div>
+
+        <div id="content-shot-list" class="shots-container"></div>
+    </div>
+</div>
+
+<div id="day-action-modal" class="action-modal hidden" onclick="handleActionModalClick(event)">
+    <div class="action-panel">
+        <h3 id="action-day-title" class="action-title">Day</h3>
+        <p class="action-sub">Open this day in edit mode or view mode.</p>
+        <div class="action-buttons">
+            <button type="button" class="btn-primary" onclick="openEditFromAction()">✏️ Edit</button>
+            <button type="button" onclick="openViewFromAction()">👁 See Content</button>
+        </div>
+        <button type="button" onclick="closeDayAction()">Close</button>
     </div>
 </div>
 
@@ -299,9 +727,14 @@
         "รีวิว 1 วันคนดูแล 100 บัญชี", "สปอยล์ระบบ GemAutomate", "ปั้นบัญชีสำรองรอเสียบ",
         "เช็คบัญชีย้อมแมว", "ศัพท์วงการฟาร์มแอด", "Q&A ตอบคำถามสายฟาร์ม"
     ];
+    const CONTENT_START_DATE = new Date(2026, 3, 27);
+    const contentSchedule = buildContentSchedule();
+    const contentByDate = new Map(contentSchedule.map((item) => [item.dateKey, item]));
 
     let appState = loadState();
-    let currentDay = null;
+    let currentDateKey = null;
+    let actionDateKey = null;
+    let viewedMonth = new Date(CONTENT_START_DATE.getFullYear(), CONTENT_START_DATE.getMonth(), 1);
     let saveTimer = null;
 
     function defaultShot(idx) {
@@ -310,17 +743,89 @@
             speech: "พิมพ์บทพูดที่นี่...",
             onScreen: "ข้อความบนจอ...",
             status: "Draft",
-            priority: "Priority",
-            image: ""
+            priority: "Priority"
         };
     }
 
-    function defaultDay(dayNum, title) {
+    function defaultDay(dateKey) {
+        const suggested = contentByDate.get(dateKey);
+        const dateObj = parseDateKey(dateKey);
+        const defaultHeadline = suggested
+            ? "Day " + suggested.dayNum + ": " + suggested.title
+            : "Content: " + formatContentDate(dateObj);
         return {
-            headline: "Day " + dayNum + ": " + title,
+            headline: defaultHeadline,
             description: "รายละเอียด: แผนคลิป TikTok / Shorts (คลิกแก้ไขได้)",
+            coverImage: "",
             shots: [defaultShot(1)]
         };
+    }
+
+    function localDateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return y + "-" + m + "-" + d;
+    }
+
+    function parseDateKey(dateKey) {
+        const parts = String(dateKey).split("-");
+        if (parts.length !== 3) {
+            return new Date();
+        }
+        const y = Number(parts[0]);
+        const m = Number(parts[1]);
+        const d = Number(parts[2]);
+        if (!y || !m || !d) {
+            return new Date();
+        }
+        return new Date(y, m - 1, d);
+    }
+
+    function formatMonthLabel(date) {
+        return date.toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric"
+        }).toUpperCase();
+    }
+
+    function formatContentDate(date) {
+        return date.toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
+    }
+
+    function buildContentSchedule() {
+        const schedule = [];
+        for (let i = 0; i < plan30Days.length; i++) {
+            const date = new Date(CONTENT_START_DATE);
+            date.setDate(CONTENT_START_DATE.getDate() + i);
+            schedule.push({
+                dayNum: i + 1,
+                title: plan30Days[i],
+                date: date,
+                dateKey: localDateKey(date)
+            });
+        }
+        return schedule;
+    }
+
+    function nextMonth() {
+        viewedMonth = new Date(viewedMonth.getFullYear(), viewedMonth.getMonth() + 1, 1);
+        renderCalendar();
+    }
+
+    function prevMonth() {
+        viewedMonth = new Date(viewedMonth.getFullYear(), viewedMonth.getMonth() - 1, 1);
+        renderCalendar();
+    }
+
+    function goToCurrentDay() {
+        const today = new Date();
+        viewedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        renderCalendar();
     }
 
     function loadState() {
@@ -333,7 +838,19 @@
             if (!parsed.days || typeof parsed.days !== "object") {
                 return { days: {} };
             }
-            return parsed;
+            const migratedDays = {};
+            Object.entries(parsed.days).forEach(([key, value]) => {
+                if (/^\d+$/.test(key)) {
+                    const dayNum = Number(key);
+                    const mapped = contentSchedule[dayNum - 1];
+                    if (mapped) {
+                        migratedDays[mapped.dateKey] = value;
+                    }
+                    return;
+                }
+                migratedDays[key] = value;
+            });
+            return { days: migratedDays };
         } catch (e) {
             return { days: {} };
         }
@@ -377,40 +894,99 @@
     }
 
     function getCurrentDayState() {
-        if (!currentDay) return null;
-        const key = String(currentDay);
+        if (!currentDateKey) return null;
+        const key = String(currentDateKey);
         if (!appState.days[key]) {
-            appState.days[key] = defaultDay(currentDay, plan30Days[currentDay - 1]);
+            appState.days[key] = defaultDay(key);
         }
-        return appState.days[key];
+        const day = appState.days[key];
+        if (typeof day.coverImage !== "string") {
+            day.coverImage = "";
+        }
+        if (!Array.isArray(day.shots) || day.shots.length === 0) {
+            day.shots = [defaultShot(1)];
+        }
+        return day;
     }
 
     function dayStatusLabel(dayData) {
-        if (!dayData || !dayData.shots || dayData.shots.length === 0) return "📍 Draft";
+        if (!dayData || !dayData.shots || dayData.shots.length === 0) return "";
         const total = dayData.shots.length;
         const done = dayData.shots.filter((s) => s.status === "Done").length;
         const ready = dayData.shots.filter((s) => s.status === "Ready").length;
-        if (done === total) return "✅ Done";
-        if (done > 0 || ready > 0) return "🟡 In Progress";
-        return "📍 Draft";
+        if (done === total) return "Done";
+        if (done > 0 || ready > 0) return "In Progress";
+        return "Draft";
+    }
+
+    function badgeClass(label) {
+        if (label === "Done") return "";
+        if (label === "In Progress") return "warn";
+        if (label === "Draft") return "muted";
+        return "muted";
+    }
+
+    function resolveDateKey(dateKey) {
+        const raw = dateKey || currentDateKey;
+        if (!raw) return null;
+        const parsed = parseDateKey(raw);
+        return localDateKey(parsed);
     }
 
     function renderCalendar() {
         const grid = document.getElementById("days-grid");
         grid.innerHTML = "";
-        plan30Days.forEach((title, index) => {
-            const dayNum = index + 1;
-            const dayData = appState.days[String(dayNum)];
+        const year = viewedMonth.getFullYear();
+        const month = viewedMonth.getMonth();
+        const firstDayOfMonth = new Date(year, month, 1);
+        const firstWeekday = firstDayOfMonth.getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const totalCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
+
+        const monthLabel = document.getElementById("month-label");
+        monthLabel.textContent = formatMonthLabel(viewedMonth);
+
+        const todayKey = localDateKey(new Date());
+        for (let cellIndex = 0; cellIndex < totalCells; cellIndex++) {
             const card = document.createElement("div");
-            card.className = "day-card";
-            card.onclick = () => showStoryboard(dayNum);
+            const dayOfMonth = cellIndex - firstWeekday + 1;
+
+            if (dayOfMonth < 1 || dayOfMonth > daysInMonth) {
+                card.className = "day-cell ghost";
+                card.innerHTML = "";
+                grid.appendChild(card);
+                continue;
+            }
+
+            const cellDate = new Date(year, month, dayOfMonth);
+            const dateKey = localDateKey(cellDate);
+            const contentItem = contentByDate.get(dateKey);
+            const dayData = appState.days[dateKey];
+            const todayClass = dateKey === todayKey ? "today" : "";
+            const status = dayStatusLabel(dayData);
+            const statusBadge = status ? `<div class="post-badge ${badgeClass(status)}">${escapeHtml(status)}</div>` : "";
+            const tagText = contentItem ? "Day " + contentItem.dayNum : (dayData ? "Custom" : "");
+            const tagHtml = tagText ? `<div class="content-day-tag">${escapeHtml(tagText)}</div>` : "";
+
+            let titleText = "Add content...";
+            if (dayData && dayData.headline) {
+                titleText = dayData.headline;
+            } else if (contentItem) {
+                titleText = contentItem.title;
+            }
+
+            card.className = "day-cell";
+            card.onclick = () => openDayAction(dateKey);
             card.innerHTML = `
-                <div class="day-number">${dayNum}</div>
-                <div class="day-status">${escapeHtml(dayStatusLabel(dayData))}</div>
-                <div class="day-title">${escapeHtml(title)}</div>
+                <div class="day-number ${todayClass}">${dayOfMonth}</div>
+                ${tagHtml}
+                ${statusBadge}
+                <div class="day-title">${escapeHtml(titleText)}</div>
+                <div class="add-post-overlay"><span class="add-post-btn">Open Day</span></div>
             `;
+
             grid.appendChild(card);
-        });
+        }
     }
 
     function renderShots() {
@@ -422,13 +998,6 @@
             const html = `
                 <div class="shot-card">
                     <button type="button" class="delete-btn" onclick="removeShot(${index})">ลบ</button>
-                    <div class="image-box">
-                        <label class="image-upload-area">
-                            <span class="upload-text ${shot.image ? "hidden" : ""}">+ ใส่รูปภาพ</span>
-                            <input type="file" accept="image/*" onchange="handleImageUpload(${index}, this)">
-                            <img src="${escapeHtml(shot.image || "")}" alt="Preview" class="${shot.image ? "has-image" : ""}">
-                        </label>
-                    </div>
                     <div class="content-box">
                         <p class="shot-title" contenteditable="true" oninput="updateShotField(${index}, 'title', this.innerText)">${escapeHtml(shot.title)}</p>
                         <div>
@@ -440,12 +1009,12 @@
                             <div class="script-area" contenteditable="true" oninput="updateShotField(${index}, 'onScreen', this.innerText)">${escapeHtml(shot.onScreen)}</div>
                         </div>
                         <div class="tags-container">
-                            <select onchange="updateShotField(${index}, 'status', this.value)" style="background: #e0f2fe; color: #0369a1;">
+                            <select onchange="updateShotField(${index}, 'status', this.value)">
                                 <option value="Draft" ${shot.status === "Draft" ? "selected" : ""}>📍 Draft</option>
                                 <option value="Ready" ${shot.status === "Ready" ? "selected" : ""}>📍 Ready</option>
                                 <option value="Done" ${shot.status === "Done" ? "selected" : ""}>📍 Done</option>
                             </select>
-                            <select onchange="updateShotField(${index}, 'priority', this.value)" style="background: #fef3c7; color: #b45309;">
+                            <select onchange="updateShotField(${index}, 'priority', this.value)">
                                 <option value="Priority" ${shot.priority === "Priority" ? "selected" : ""}>⚡ Priority</option>
                                 <option value="High" ${shot.priority === "High" ? "selected" : ""}>🔥 High</option>
                             </select>
@@ -457,20 +1026,139 @@
         });
     }
 
-    function showStoryboard(dayNum) {
-        currentDay = dayNum;
+    function renderCover() {
+        const day = getCurrentDayState();
+        const preview = document.getElementById("cover-preview");
+        const uploadText = document.getElementById("cover-upload-text");
+        const removeBtn = document.getElementById("cover-remove-btn");
+
+        if (day.coverImage) {
+            preview.src = day.coverImage;
+            preview.classList.add("has-image");
+            uploadText.classList.add("hidden");
+            removeBtn.classList.remove("hidden");
+        } else {
+            preview.src = "";
+            preview.classList.remove("has-image");
+            uploadText.classList.remove("hidden");
+            removeBtn.classList.add("hidden");
+        }
+    }
+
+    function renderContentView() {
+        const day = getCurrentDayState();
+        const shotList = document.getElementById("content-shot-list");
+        const coverWrap = document.getElementById("view-cover-wrap");
+        const coverImage = document.getElementById("view-cover-image");
+
+        document.getElementById("view-day-title").innerText = day.headline;
+        document.getElementById("view-day-desc").innerText = day.description;
+
+        if (day.coverImage) {
+            coverImage.src = day.coverImage;
+            coverWrap.classList.remove("hidden");
+        } else {
+            coverImage.src = "";
+            coverWrap.classList.add("hidden");
+        }
+
+        shotList.innerHTML = "";
+        day.shots.forEach((shot) => {
+            const speech = escapeHtml(shot.speech || "").replaceAll("\n", "<br>");
+            const onScreen = escapeHtml(shot.onScreen || "").replaceAll("\n", "<br>");
+            const html = `
+                <div class="read-shot-card">
+                    <div class="read-shot-head">
+                        <h3 class="read-shot-title">${escapeHtml(shot.title || "Shot")}</h3>
+                        <div class="read-shot-badges">
+                            <span class="mini-badge">${escapeHtml(shot.status || "Draft")}</span>
+                            <span class="mini-badge">${escapeHtml(shot.priority || "Priority")}</span>
+                        </div>
+                    </div>
+                    <div class="read-row">
+                        <strong>🎬 บทพูด</strong>
+                        <p>${speech || "-"}</p>
+                    </div>
+                    <div class="read-row">
+                        <strong>📝 Text บนจอ</strong>
+                        <p>${onScreen || "-"}</p>
+                    </div>
+                </div>
+            `;
+            shotList.insertAdjacentHTML("beforeend", html);
+        });
+    }
+
+    function openDayAction(dateKey) {
+        actionDateKey = resolveDateKey(dateKey);
+        if (!actionDateKey) return;
+        const item = contentByDate.get(actionDateKey);
+        const dateText = formatContentDate(parseDateKey(actionDateKey));
+        const existingHeadline = appState.days[actionDateKey] && appState.days[actionDateKey].headline
+            ? appState.days[actionDateKey].headline
+            : "";
+        const title = item ? item.title : (existingHeadline || "Open this date");
+        const prefix = item ? ("Day " + item.dayNum + " • ") : "";
+        document.getElementById("action-day-title").innerText = prefix + dateText + ": " + title;
+        document.getElementById("day-action-modal").classList.remove("hidden");
+    }
+
+    function closeDayAction() {
+        actionDateKey = null;
+        document.getElementById("day-action-modal").classList.add("hidden");
+    }
+
+    function handleActionModalClick(event) {
+        if (event.target && event.target.id === "day-action-modal") {
+            closeDayAction();
+        }
+    }
+
+    function openEditFromAction() {
+        const dateKey = resolveDateKey(actionDateKey);
+        closeDayAction();
+        if (!dateKey) return;
+        showStoryboard(dateKey);
+    }
+
+    function openViewFromAction() {
+        const dateKey = resolveDateKey(actionDateKey);
+        closeDayAction();
+        if (!dateKey) return;
+        showContent(dateKey);
+    }
+
+    function showStoryboard(dateKey) {
+        const resolved = resolveDateKey(dateKey);
+        if (!resolved) return;
+        currentDateKey = resolved;
         const day = getCurrentDayState();
         document.getElementById("calendar-view").classList.add("hidden");
+        document.getElementById("content-view").classList.add("hidden");
         document.getElementById("storyboard-view").classList.remove("hidden");
         document.getElementById("current-day-title").innerText = day.headline;
         document.getElementById("current-day-desc").innerText = day.description;
         document.getElementById("save-state").textContent = "พร้อมแก้ไข";
+        renderCover();
         renderShots();
         window.scrollTo(0, 0);
     }
 
+    function showContent(dateKey) {
+        const resolved = resolveDateKey(dateKey);
+        if (!resolved) return;
+        currentDateKey = resolved;
+        document.getElementById("calendar-view").classList.add("hidden");
+        document.getElementById("storyboard-view").classList.add("hidden");
+        document.getElementById("content-view").classList.remove("hidden");
+        renderContentView();
+        window.scrollTo(0, 0);
+    }
+
     function showCalendar() {
-        currentDay = null;
+        currentDateKey = null;
+        closeDayAction();
+        document.getElementById("content-view").classList.add("hidden");
         document.getElementById("storyboard-view").classList.add("hidden");
         document.getElementById("calendar-view").classList.remove("hidden");
         renderCalendar();
@@ -507,18 +1195,25 @@
         queueSaveLabel();
     }
 
-    function handleImageUpload(index, input) {
+    function handleCoverUpload(input) {
         if (!input.files || !input.files[0]) {
             return;
         }
         const reader = new FileReader();
         reader.onload = function(e) {
             const day = getCurrentDayState();
-            day.shots[index].image = e.target.result;
-            renderShots();
+            day.coverImage = e.target.result;
+            renderCover();
             queueSaveLabel();
         };
         reader.readAsDataURL(input.files[0]);
+    }
+
+    function clearCoverImage() {
+        const day = getCurrentDayState();
+        day.coverImage = "";
+        renderCover();
+        queueSaveLabel();
     }
 
     function saveCurrentDay() {
@@ -527,8 +1222,10 @@
     }
 
     function resetCurrentDay() {
-        if (!currentDay) return;
-        appState.days[String(currentDay)] = defaultDay(currentDay, plan30Days[currentDay - 1]);
+        if (!currentDateKey) return;
+        const key = String(currentDateKey);
+        appState.days[key] = defaultDay(key);
+        renderCover();
         renderShots();
         queueSaveLabel();
     }
