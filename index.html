@@ -50,10 +50,16 @@
         <div class="header">
             <div class="content-manager">
                 <select id="content-select" class="content-select" onchange="switchContent(this.value)"></select>
+                <select id="content-type-select" class="content-type-select" onchange="updateContentType(this.value)">
+                    <option value="Video">Video</option>
+                    <option value="Post Image">Post Image</option>
+                    <option value="Post Text">Post Text</option>
+                </select>
                 <button type="button" onclick="addContentItem()">+ Add Content</button>
                 <button type="button" onclick="removeCurrentContent()">Delete Content</button>
             </div>
             <h1 id="current-day-title" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateDayField('headline', this.innerText)">Day X: หัวข้อคลิป</h1>
+            <p id="current-day-desc-label" class="field-label">Video Brief</p>
             <p id="current-day-desc" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateDayField('description', this.innerText)">รายละเอียด: แผนคลิป TikTok / Shorts</p>
             <p class="empty-note">แก้ไขข้อความได้ทันที แล้วกด Save</p>
             <div class="day-meta-controls">
@@ -68,7 +74,7 @@
                 </select>
             </div>
             <div id="platform-grid" class="platform-grid"></div>
-            <div class="cover-wrap">
+            <div id="cover-section" class="cover-wrap">
                 <div class="cover-label">Cover Image</div>
                 <label class="cover-upload">
                     <span id="cover-upload-text" class="upload-text">+ Add cover image</span>
@@ -79,8 +85,10 @@
             </div>
         </div>
 
-        <div class="shots-container" id="storyboard-container"></div>
-        <button type="button" class="add-btn" onclick="addShot()">+ เพิ่มช็อตใหม่ (Add New Shot)</button>
+        <div id="video-section">
+            <div class="shots-container" id="storyboard-container"></div>
+            <button id="add-shot-btn" type="button" class="add-btn" onclick="addShot()">+ เพิ่มช็อตใหม่ (Add New Shot)</button>
+        </div>
     </div>
 
 </div>

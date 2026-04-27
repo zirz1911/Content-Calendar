@@ -12,6 +12,27 @@
         "เช็คบัญชีย้อมแมว", "ศัพท์วงการฟาร์มแอด", "Q&A ตอบคำถามสายฟาร์ม"
     ];
     const PLATFORMS = ["Facebook", "Instagram", "Threads", "TikTok", "Lemon8", "X", "Youtube", "VK"];
+    const CONTENT_TYPES = ["Video", "Post Image", "Post Text"];
+    const TYPE_META = {
+        "Video": {
+            label: "Video Brief",
+            defaultDescription: "รายละเอียดวิดีโอ: มุมเล่าเรื่อง / key message (คลิกแก้ไขได้)",
+            showCover: true,
+            showShots: true
+        },
+        "Post Image": {
+            label: "Image Caption",
+            defaultDescription: "รายละเอียดโพสต์ภาพ: caption / CTA (คลิกแก้ไขได้)",
+            showCover: true,
+            showShots: false
+        },
+        "Post Text": {
+            label: "Post Text",
+            defaultDescription: "รายละเอียดโพสต์ข้อความ: เนื้อหา / hook / CTA (คลิกแก้ไขได้)",
+            showCover: false,
+            showShots: false
+        }
+    };
     const CONTENT_START_DATE = new Date(2026, 3, 27);
     const contentSchedule = buildContentSchedule();
     const contentByDate = new Map(contentSchedule.map((item) => [item.dateKey, item]));
@@ -34,6 +55,18 @@
         };
     }
 
+    function normalizeContentType(type) {
+        return CONTENT_TYPES.includes(type) ? type : "Video";
+    }
+
+    function getTypeMeta(type) {
+        return TYPE_META[normalizeContentType(type)];
+    }
+
+    function defaultDescriptionForType(type) {
+        return getTypeMeta(type).defaultDescription;
+    }
+
     function defaultContent(dateKey, idx) {
         const suggested = contentByDate.get(dateKey);
         const dateObj = parseDateKey(dateKey);
@@ -43,8 +76,9 @@
             : ("Content " + idx + ": " + formatContentDate(dateObj));
         return {
             id: newId("content"),
+            type: "Video",
             headline: defaultHeadline,
-            description: "รายละเอียด: แผนคลิป TikTok / Shorts (คลิกแก้ไขได้)",
+            description: defaultDescriptionForType("Video"),
             status: "Draft",
             priority: "Priority",
             platforms: [],
@@ -201,10 +235,12 @@
     }
 
     function isTemplateEditableText(text) {
+        const defaultDescriptions = CONTENT_TYPES.map((type) => defaultDescriptionForType(type));
         return text === "พิมพ์บทพูดที่นี่..."
             || text === "ข้อความบนจอ..."
             || text === "Day X: หัวข้อคลิป"
             || text === "รายละเอียด: แผนคลิป TikTok / Shorts"
+            || defaultDescriptions.includes(text)
             || /^Shot \d+: \.\.\.$/.test(text);
     }
 
@@ -231,8 +267,9 @@
         content.id = (rawContent && typeof rawContent.id === "string" && rawContent.id)
             ? rawContent.id
             : newId("content");
+        content.type = normalizeContentType(content.type);
         content.headline = content.headline || base.headline;
-        content.description = content.description || base.description;
+        content.description = content.description || defaultDescriptionForType(content.type);
         content.coverImage = typeof content.coverImage === "string" ? content.coverImage : "";
 
         if (!content.status) {
@@ -426,10 +463,35 @@
             const option = document.createElement("option");
             const label = normalizeEditableText(content.headline || ("Content " + (idx + 1)));
             option.value = content.id;
-            option.textContent = (idx + 1) + ". " + (label || ("Content " + (idx + 1)));
+            option.textContent = (idx + 1) + ". [" + normalizeContentType(content.type) + "] " + (label || ("Content " + (idx + 1)));
             select.appendChild(option);
         });
         select.value = currentContent ? currentContent.id : "";
+    }
+
+    function renderContentTypeControl() {
+        const content = getCurrentContent();
+        const typeSelect = document.getElementById("content-type-select");
+        if (!typeSelect || !content) return;
+        typeSelect.value = normalizeContentType(content.type);
+    }
+
+    function applyContentTypeUI(content) {
+        const safeType = normalizeContentType(content && content.type);
+        const meta = getTypeMeta(safeType);
+        const descriptionLabel = document.getElementById("current-day-desc-label");
+        const coverSection = document.getElementById("cover-section");
+        const videoSection = document.getElementById("video-section");
+
+        if (descriptionLabel) {
+            descriptionLabel.innerText = meta.label;
+        }
+        if (coverSection) {
+            coverSection.classList.toggle("hidden", !meta.showCover);
+        }
+        if (videoSection) {
+            videoSection.classList.toggle("hidden", !meta.showShots);
+        }
     }
 
     function switchContent(contentId) {
@@ -507,6 +569,7 @@
         const content = getCurrentContent();
         container.innerHTML = "";
         if (!content) return;
+        if (normalizeContentType(content.type) !== "Video") return;
 
         content.shots.forEach((shot, index) => {
             const html = `
@@ -565,6 +628,8 @@
         document.getElementById("current-day-title").innerText = content.headline;
         document.getElementById("current-day-desc").innerText = content.description;
         renderContentSelector();
+        renderContentTypeControl();
+        applyContentTypeUI(content);
         renderDayMetaControls();
         renderPlatformControls();
         renderCover();
@@ -584,6 +649,7 @@
         list.innerHTML = "";
 
         day.contents.forEach((content, idx) => {
+            const safeType = normalizeContentType(content.type);
             const card = document.createElement("button");
             card.type = "button";
             card.className = "content-card-btn";
@@ -591,6 +657,7 @@
             card.innerHTML = `
                 <h4 class="content-card-title">${idx + 1}. ${escapeHtml(content.headline || "Untitled Content")}</h4>
                 <div class="read-shot-badges" style="margin-bottom: 0.4rem;">
+                    <span class="mini-badge">${escapeHtml(safeType)}</span>
                     <span class="mini-badge">${escapeHtml(content.status || "Draft")}</span>
                     <span class="mini-badge">${escapeHtml(content.priority || "Priority")}</span>
                 </div>
@@ -624,6 +691,8 @@
         if (!day) return;
         const content = day.contents.find((item) => item.id === contentId);
         if (!content) return;
+        const safeType = normalizeContentType(content.type);
+        const typeMeta = getTypeMeta(safeType);
 
         const flowTitle = document.getElementById("content-flow-title");
         const flowSub = document.getElementById("content-flow-sub");
@@ -637,7 +706,7 @@
         const coverHtml = content.coverImage
             ? `<img class="content-cover-preview" src="${escapeHtml(content.coverImage)}" alt="Content cover">`
             : "";
-        const shotsHtml = content.shots.map((shot) => {
+        const shotsHtml = (Array.isArray(content.shots) ? content.shots : []).map((shot) => {
             const speech = escapeHtml(shot.speech || "").replaceAll("\n", "<br>");
             const onScreen = escapeHtml(shot.onScreen || "").replaceAll("\n", "<br>");
             return `
@@ -656,22 +725,30 @@
                 </div>
             `;
         }).join("");
+        const descriptionText = escapeHtml(content.description || "-").replaceAll("\n", "<br>");
+        const detailLabel = safeType === "Post Text" ? "Post Content" : "Description";
+        const emptyCoverHtml = typeMeta.showCover ? `<p class="read-empty-note">No cover image</p>` : "";
+        const detailByType = safeType === "Video"
+            ? (coverHtml || emptyCoverHtml) + shotsHtml
+            : (safeType === "Post Image"
+                ? (coverHtml || emptyCoverHtml)
+                : "");
 
         flowBody.innerHTML = `
             <div class="read-content-card">
                 <div class="read-row">
-                    <strong>Description</strong>
-                    <p>${escapeHtml(content.description || "-")}</p>
+                    <strong>${detailLabel}</strong>
+                    <p>${descriptionText}</p>
                 </div>
                 <div class="read-shot-head">
                     <div class="read-shot-badges">
+                        <span class="mini-badge">${escapeHtml(safeType)}</span>
                         <span class="mini-badge">${escapeHtml(content.status || "Draft")}</span>
                         <span class="mini-badge">${escapeHtml(content.priority || "Priority")}</span>
                         ${platformBadges}
                     </div>
                 </div>
-                ${coverHtml}
-                ${shotsHtml}
+                ${detailByType}
             </div>
         `;
 
@@ -779,16 +856,34 @@
         queueSaveLabel();
     }
 
+    function updateContentType(value) {
+        const content = getCurrentContent();
+        if (!content) return;
+        const nextType = normalizeContentType(value);
+        const prevType = normalizeContentType(content.type);
+        if (nextType === prevType) return;
+
+        content.type = nextType;
+        const normalizedDescription = normalizeEditableText(content.description);
+        if (!normalizedDescription || isTemplateEditableText(normalizedDescription)) {
+            content.description = defaultDescriptionForType(nextType);
+        }
+
+        renderEditorContent();
+        renderCalendar();
+        queueSaveLabel();
+    }
+
     function updateShotField(index, field, value) {
         const content = getCurrentContent();
-        if (!content || !content.shots[index]) return;
+        if (!content || normalizeContentType(content.type) !== "Video" || !content.shots[index]) return;
         content.shots[index][field] = value;
         queueSaveLabel();
     }
 
     function addShot() {
         const content = getCurrentContent();
-        if (!content) return;
+        if (!content || normalizeContentType(content.type) !== "Video") return;
         content.shots.push(defaultShot(content.shots.length + 1));
         renderShots();
         queueSaveLabel();
@@ -796,7 +891,7 @@
 
     function removeShot(index) {
         const content = getCurrentContent();
-        if (!content || content.shots.length <= 1) {
+        if (!content || normalizeContentType(content.type) !== "Video" || content.shots.length <= 1) {
             return;
         }
         content.shots.splice(index, 1);
@@ -808,10 +903,15 @@
         if (!input.files || !input.files[0]) {
             return;
         }
+        const content = getCurrentContent();
+        if (!content || !getTypeMeta(content.type).showCover) {
+            input.value = "";
+            return;
+        }
         const reader = new FileReader();
         reader.onload = function(e) {
             const content = getCurrentContent();
-            if (!content) return;
+            if (!content || !getTypeMeta(content.type).showCover) return;
             content.coverImage = e.target.result;
             renderCover();
             queueSaveLabel();
