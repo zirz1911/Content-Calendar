@@ -797,6 +797,33 @@
         }
     }
 
+    function openImagePreviewFromElement(element) {
+        if (!element || !element.src) return;
+        openImagePreviewModal(element.src);
+    }
+
+    function openImagePreviewModal(src) {
+        const modal = document.getElementById("image-preview-modal");
+        const image = document.getElementById("image-preview-full");
+        if (!modal || !image || !src) return;
+        image.src = src;
+        modal.classList.remove("hidden");
+    }
+
+    function closeImagePreviewModal() {
+        const modal = document.getElementById("image-preview-modal");
+        const image = document.getElementById("image-preview-full");
+        if (!modal || !image) return;
+        modal.classList.add("hidden");
+        image.src = "";
+    }
+
+    function handleImagePreviewModalClick(event) {
+        if (event.target && event.target.id === "image-preview-modal") {
+            closeImagePreviewModal();
+        }
+    }
+
     function openContentFlow(contentId) {
         const day = getCurrentDayState();
         if (!day) return;
@@ -815,7 +842,7 @@
             .map((platform) => `<span class="mini-badge">${escapeHtml(platform)}</span>`)
             .join("");
         const coverHtml = content.coverImage
-            ? `<img class="content-cover-preview" src="${escapeHtml(content.coverImage)}" alt="Content cover">`
+            ? `<img class="content-cover-preview clickable" src="${escapeHtml(content.coverImage)}" alt="Content cover" onclick="openImagePreviewFromElement(this)">`
             : "";
         const shotsHtml = (Array.isArray(content.shots) ? content.shots : []).map((shot) => {
             const speech = escapeHtml(shot.speech || "").replaceAll("\n", "<br>");
@@ -869,6 +896,7 @@
 
     function closeContentFlowModal() {
         document.getElementById("content-flow-modal").classList.add("hidden");
+        closeImagePreviewModal();
     }
 
     function backToContentCards() {
