@@ -59,8 +59,10 @@
                 <button type="button" onclick="removeCurrentContent()">Delete Content</button>
             </div>
             <h1 id="current-day-title" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateDayField('headline', this.innerText)">Day X: หัวข้อคลิป</h1>
-            <p id="current-day-desc-label" class="field-label">Video Brief</p>
-            <p id="current-day-desc" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateDayField('description', this.innerText)">รายละเอียด: แผนคลิป TikTok / Shorts</p>
+            <div id="top-detail-section">
+                <p id="current-day-desc-label" class="field-label">Video Brief</p>
+                <p id="current-day-desc" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateDayField('description', this.innerText)">รายละเอียด: แผนคลิป TikTok / Shorts</p>
+            </div>
             <p class="empty-note">แก้ไขข้อความได้ทันที แล้วกด Save</p>
             <div class="day-meta-controls">
                 <select id="day-status-select" onchange="updateDayMeta('status', this.value)">
@@ -88,6 +90,10 @@
         <div id="video-section">
             <div class="shots-container" id="storyboard-container"></div>
             <button id="add-shot-btn" type="button" class="add-btn" onclick="addShot()">+ เพิ่มช็อตใหม่ (Add New Shot)</button>
+        </div>
+        <div id="non-video-detail-section" class="bottom-detail hidden">
+            <p id="non-video-detail-label" class="field-label">Post Detail</p>
+            <div id="non-video-detail-field" class="bottom-detail-field" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateDayField('description', this.innerText)">รายละเอียดโพสต์ (คลิกแก้ไขได้)</div>
         </div>
     </div>
 

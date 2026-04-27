@@ -432,6 +432,25 @@
             font-weight: 700;
         }
 
+        .bottom-detail {
+            background-color: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 0.9rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .bottom-detail-field {
+            background: var(--surface-soft);
+            padding: 0.7rem;
+            border-radius: 0.6rem;
+            border: 1px solid var(--line-2);
+            min-height: 7rem;
+            font-size: 0.92rem;
+            line-height: 1.35;
+            white-space: pre-wrap;
+        }
+
         .platform-grid {
             margin-top: 0.65rem;
             display: grid;

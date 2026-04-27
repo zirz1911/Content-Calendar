@@ -479,12 +479,25 @@
     function applyContentTypeUI(content) {
         const safeType = normalizeContentType(content && content.type);
         const meta = getTypeMeta(safeType);
+        const isVideo = safeType === "Video";
         const descriptionLabel = document.getElementById("current-day-desc-label");
+        const topDetailSection = document.getElementById("top-detail-section");
+        const bottomDetailSection = document.getElementById("non-video-detail-section");
+        const bottomDetailLabel = document.getElementById("non-video-detail-label");
         const coverSection = document.getElementById("cover-section");
         const videoSection = document.getElementById("video-section");
 
         if (descriptionLabel) {
             descriptionLabel.innerText = meta.label;
+        }
+        if (topDetailSection) {
+            topDetailSection.classList.toggle("hidden", !isVideo);
+        }
+        if (bottomDetailSection) {
+            bottomDetailSection.classList.toggle("hidden", isVideo);
+        }
+        if (bottomDetailLabel) {
+            bottomDetailLabel.innerText = meta.label;
         }
         if (coverSection) {
             coverSection.classList.toggle("hidden", !meta.showCover);
@@ -627,6 +640,10 @@
         if (!content) return;
         document.getElementById("current-day-title").innerText = content.headline;
         document.getElementById("current-day-desc").innerText = content.description;
+        const bottomDetailField = document.getElementById("non-video-detail-field");
+        if (bottomDetailField) {
+            bottomDetailField.innerText = content.description;
+        }
         renderContentSelector();
         renderContentTypeControl();
         applyContentTypeUI(content);
