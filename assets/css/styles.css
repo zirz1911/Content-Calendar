@@ -1,16 +1,87 @@
         @import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Inter:wght@400;500;600;700&display=swap");
 
         :root {
+            --bg: #eef6f2;
+            --panel: #fbfffc;
+            --surface: #f3fbf7;
+            --surface-soft: #ebf6f0;
+            --surface-strong: #e2efe8;
+            --line: #c8ddd2;
+            --line-2: #acc7ba;
+            --text: #173229;
+            --muted: #5f7c71;
+            --accent: oklch(0.73 0.17 152);
+            --accent-soft: rgba(16, 185, 129, 0.12);
+            --accent-strong: oklch(0.67 0.18 152);
+            --accent-contrast: #06281c;
+            --app-shadow: 0 24px 55px rgba(20, 83, 45, 0.12);
+            --accent-glow: 0 0 20px rgba(16, 185, 129, 0.12);
+            --weekday-bg: #e7f3ed;
+            --day-hover: #ecf8f2;
+            --tag-text: #0f6b4a;
+            --tag-bg: rgba(16, 185, 129, 0.12);
+            --tag-border: rgba(16, 185, 129, 0.28);
+            --overlay-accent: rgba(16, 185, 129, 0.1);
+            --button-bg: #f6fcf9;
+            --button-hover-shadow: 0 0 8px rgba(16, 185, 129, 0.14);
+            --telegram-bg: #f0f8f4;
+            --cover-upload-bg: #f8fcfa;
+            --cover-preview-bg: #dfece6;
+            --editable-line: #8ea89c;
+            --editable-focus-bg: #e6f5ee;
+            --platform-bg: #edf6f1;
+            --danger-bg: rgba(239, 68, 68, 0.12);
+            --danger-text: #b42318;
+            --danger-border: rgba(239, 68, 68, 0.28);
+            --add-btn-bg: #f4fbf7;
+            --modal-backdrop: rgba(8, 20, 16, 0.58);
+            --modal-panel: #f9fdfa;
+            --card-bg: #f5fbf8;
+            --image-preview-bg: rgba(8, 20, 16, 0.88);
+            --image-preview-surface: #edf6f1;
+            --title-soft: #26453b;
+        }
+
+        body[data-theme="dark"] {
             --bg: #0a0a0a;
             --panel: #0f0f0f;
             --surface: #1e1e1e;
             --surface-soft: #252525;
+            --surface-strong: #262626;
             --line: #333333;
             --line-2: #444444;
             --text: #e0e0e0;
             --muted: #9ca3af;
             --accent: oklch(0.85 0.2 142);
             --accent-soft: rgba(0, 220, 130, 0.15);
+            --accent-strong: oklch(0.8 0.25 142);
+            --accent-contrast: #000000;
+            --app-shadow: 0 0 30px rgba(0, 220, 130, 0.1);
+            --accent-glow: 0 0 20px rgba(0, 220, 130, 0.12);
+            --weekday-bg: #222222;
+            --day-hover: #1a1a1a;
+            --tag-text: #d1fae5;
+            --tag-bg: rgba(16, 185, 129, 0.16);
+            --tag-border: rgba(16, 185, 129, 0.45);
+            --overlay-accent: rgba(0, 220, 130, 0.1);
+            --button-bg: #2a2a2a;
+            --button-hover-shadow: 0 0 8px rgba(0, 220, 130, 0.15);
+            --telegram-bg: #1b1b1b;
+            --cover-upload-bg: #161616;
+            --cover-preview-bg: #0d0d0d;
+            --editable-line: #4b5563;
+            --editable-focus-bg: #1f2937;
+            --platform-bg: #232323;
+            --danger-bg: rgba(239, 68, 68, 0.18);
+            --danger-text: #fca5a5;
+            --danger-border: rgba(239, 68, 68, 0.4);
+            --add-btn-bg: #151515;
+            --modal-backdrop: rgba(0, 0, 0, 0.76);
+            --modal-panel: #171717;
+            --card-bg: #1f1f1f;
+            --image-preview-bg: rgba(0, 0, 0, 0.9);
+            --image-preview-surface: #0a0a0a;
+            --title-soft: #e5e7eb;
         }
 
         * {
@@ -24,6 +95,7 @@
             color: var(--text);
             font-family: "Inter", sans-serif;
             padding: 2rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
 
         .container {
@@ -32,11 +104,24 @@
             background-color: var(--panel);
             padding: 1.75rem;
             border-radius: 1rem;
-            box-shadow: 0 0 30px rgba(0, 220, 130, 0.1);
-            border: 1px solid oklch(0.85 0.2 142 / 0.3);
+            box-shadow: var(--app-shadow);
+            border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent);
+            transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .hidden { display: none !important; }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1.2rem;
+            right: 1.2rem;
+            z-index: 220;
+            background: var(--button-bg);
+            color: var(--text);
+            border: 1px solid var(--line-2);
+            box-shadow: var(--accent-glow);
+            backdrop-filter: blur(10px);
+        }
 
         .calendar-topbar {
             display: flex;
@@ -57,7 +142,7 @@
 
         .brand-icon {
             color: var(--accent);
-            text-shadow: 0 0 10px oklch(0.85 0.2 142 / 0.5);
+            text-shadow: 0 0 10px color-mix(in oklab, var(--accent) 55%, transparent);
         }
 
         .month-label {
@@ -105,7 +190,7 @@
         }
 
         .calendar-weekdays div {
-            background-color: #222222;
+            background-color: var(--weekday-bg);
             padding: 0.7rem 0;
             text-align: center;
             font-size: 0.84rem;
@@ -143,9 +228,9 @@
         }
 
         .day-cell:hover {
-            background-color: #1a1a1a;
+            background-color: var(--day-hover);
             border-color: var(--accent);
-            box-shadow: 0 0 15px rgba(0, 220, 130, 0.2);
+            box-shadow: 0 0 15px color-mix(in oklab, var(--accent) 22%, transparent);
         }
 
         .day-cell.no-content {
@@ -184,9 +269,9 @@
 
         .day-number.today {
             background-color: var(--accent);
-            color: #000000;
+            color: var(--accent-contrast);
             font-weight: 700;
-            box-shadow: 0 0 15px oklch(0.85 0.2 142 / 0.6);
+            box-shadow: 0 0 15px color-mix(in oklab, var(--accent) 60%, transparent);
         }
 
         .post-badge {
@@ -194,11 +279,11 @@
             font-size: 0.62rem;
             background-color: var(--accent-soft);
             color: var(--accent);
-            border: 1px solid rgba(0, 220, 130, 0.4);
+            border: 1px solid color-mix(in oklab, var(--accent) 40%, transparent);
             padding: 0.18rem 0.4rem;
             border-radius: 0.3rem;
             width: fit-content;
-            box-shadow: 0 0 8px rgba(0, 220, 130, 0.3);
+            box-shadow: 0 0 8px color-mix(in oklab, var(--accent) 26%, transparent);
             z-index: 1;
         }
 
@@ -218,9 +303,9 @@
 
         .content-day-tag {
             font-size: 0.58rem;
-            color: #d1fae5;
-            background: rgba(16, 185, 129, 0.16);
-            border: 1px solid rgba(16, 185, 129, 0.45);
+            color: var(--tag-text);
+            background: var(--tag-bg);
+            border: 1px solid var(--tag-border);
             border-radius: 999px;
             padding: 0.1rem 0.35rem;
             width: fit-content;
@@ -230,7 +315,7 @@
 
         .day-title {
             font-size: 0.68rem;
-            color: #d1d5db;
+            color: var(--title-soft);
             line-height: 1.2;
             max-height: 2.4em;
             overflow: hidden;
@@ -240,7 +325,7 @@
         .add-post-overlay {
             position: absolute;
             inset: 0;
-            background-color: rgba(0, 220, 130, 0.1);
+            background-color: var(--overlay-accent);
             opacity: 0;
             transition: opacity 0.2s ease;
             display: flex;
@@ -255,12 +340,12 @@
 
         .add-post-btn {
             background-color: var(--accent);
-            color: #000000;
+            color: var(--accent-contrast);
             font-size: 0.7rem;
             font-weight: 700;
             padding: 0.24rem 0.52rem;
             border-radius: 0.35rem;
-            box-shadow: 0 0 10px rgba(0, 220, 130, 0.4);
+            box-shadow: 0 0 10px color-mix(in oklab, var(--accent) 38%, transparent);
         }
 
         .nav-bar {
@@ -290,7 +375,7 @@
             padding: 0.24rem 0.5rem;
             border: 1px solid var(--line-2);
             border-radius: 999px;
-            background: #1b1b1b;
+            background: var(--telegram-bg);
         }
 
         .telegram-state.ok {
@@ -305,7 +390,7 @@
 
         button {
             border: 1px solid var(--line-2);
-            background-color: #2a2a2a;
+            background-color: var(--button-bg);
             color: var(--text);
             border-radius: 0.65rem;
             padding: 0.58rem 0.85rem;
@@ -316,19 +401,19 @@
 
         button:hover {
             border-color: var(--accent);
-            box-shadow: 0 0 8px rgba(0, 220, 130, 0.15);
+            box-shadow: var(--button-hover-shadow);
         }
 
         .btn-primary {
             background-color: var(--accent);
-            color: #000000;
+            color: var(--accent-contrast);
             border: 1px solid transparent;
-            box-shadow: 0 0 12px rgba(0, 220, 130, 0.28);
+            box-shadow: 0 0 12px color-mix(in oklab, var(--accent) 30%, transparent);
         }
 
         .btn-primary:hover {
-            background-color: oklch(0.8 0.25 142);
-            box-shadow: 0 0 18px rgba(0, 220, 130, 0.4);
+            background-color: var(--accent-strong);
+            box-shadow: 0 0 18px color-mix(in oklab, var(--accent) 42%, transparent);
         }
 
         .save-state {
@@ -376,7 +461,7 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            background-color: #161616;
+            background-color: var(--cover-upload-bg);
         }
 
         .cover-upload:hover {
@@ -390,7 +475,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            background-color: #0d0d0d;
+            background-color: var(--cover-preview-bg);
             display: none;
         }
 
@@ -398,14 +483,14 @@
         .upload-text.hidden { display: none; }
 
         [contenteditable="true"] {
-            border-bottom: 1px dashed #4b5563;
+            border-bottom: 1px dashed var(--editable-line);
             outline: none;
             padding: 2px 4px;
         }
 
         [contenteditable="true"]:focus {
             border-bottom: 1px solid var(--accent);
-            background-color: #1f2937;
+            background-color: var(--editable-focus-bg);
             border-radius: 4px;
         }
 
@@ -415,7 +500,7 @@
         }
 
         #current-day-desc {
-            color: #d1d5db;
+            color: var(--title-soft);
             margin-bottom: 0.4rem;
         }
 
@@ -486,7 +571,7 @@
             display: flex;
             align-items: center;
             gap: 0.4rem;
-            background: #232323;
+            background: var(--platform-bg);
             border: 1px solid var(--line-2);
             border-radius: 0.5rem;
             padding: 0.38rem 0.48rem;
@@ -498,7 +583,7 @@
         }
 
         .platform-name {
-            color: #d1d5db;
+            color: var(--title-soft);
             font-weight: 600;
         }
 
@@ -525,9 +610,9 @@
             padding: 0.28rem 0.58rem;
             border-radius: 0.4rem;
             font-size: 0.7rem;
-            background: rgba(239, 68, 68, 0.18);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border: 1px solid var(--danger-border);
         }
 
         .content-box {
@@ -566,7 +651,7 @@
             font-size: 0.75rem;
             font-weight: 700;
             color: var(--text);
-            background: #2a2a2a;
+            background: var(--button-bg);
             outline: none;
             cursor: pointer;
         }
@@ -576,21 +661,21 @@
             margin-top: 0.95rem;
             padding: 0.9rem;
             border-radius: 0.75rem;
-            border: 2px dashed rgba(0, 220, 130, 0.5);
+            border: 2px dashed color-mix(in oklab, var(--accent) 50%, transparent);
             color: var(--accent);
-            background: #151515;
+            background: var(--add-btn-bg);
             font-weight: 700;
         }
 
         .add-btn:hover {
-            background: rgba(0, 220, 130, 0.08);
+            background: var(--overlay-accent);
         }
 
         .action-modal {
             position: fixed;
             inset: 0;
             z-index: 100;
-            background: rgba(0, 0, 0, 0.75);
+            background: var(--modal-backdrop);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -600,11 +685,11 @@
         .action-panel {
             width: 100%;
             max-width: 360px;
-            background: #171717;
+            background: var(--modal-panel);
             border: 1px solid var(--line-2);
             border-radius: 0.85rem;
             padding: 1rem;
-            box-shadow: 0 0 25px rgba(0, 220, 130, 0.15);
+            box-shadow: 0 0 25px color-mix(in oklab, var(--accent) 16%, transparent);
         }
 
         .action-title {
@@ -629,7 +714,7 @@
             position: fixed;
             inset: 0;
             z-index: 120;
-            background: rgba(0, 0, 0, 0.76);
+            background: var(--modal-backdrop);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -641,11 +726,11 @@
             max-width: 920px;
             max-height: 90vh;
             overflow: auto;
-            background: #171717;
+            background: var(--modal-panel);
             border: 1px solid var(--line-2);
             border-radius: 0.85rem;
             padding: 1rem;
-            box-shadow: 0 0 25px rgba(0, 220, 130, 0.15);
+            box-shadow: 0 0 25px color-mix(in oklab, var(--accent) 16%, transparent);
         }
 
         .content-modal-head {
@@ -665,7 +750,7 @@
 
         .content-card-btn {
             text-align: left;
-            background: #1f1f1f;
+            background: var(--card-bg);
             border: 1px solid var(--line-2);
             border-radius: 0.7rem;
             padding: 0.75rem;
@@ -675,13 +760,13 @@
 
         .content-card-btn:hover {
             border-color: var(--accent);
-            box-shadow: 0 0 10px rgba(0, 220, 130, 0.15);
+            box-shadow: var(--button-hover-shadow);
         }
 
         .content-card-title {
             margin: 0 0 0.35rem 0;
             font-size: 0.95rem;
-            color: #e5e7eb;
+            color: var(--title-soft);
         }
 
         .content-card-desc {
@@ -723,7 +808,7 @@
         .content-section-title {
             margin: 0 0 0.45rem 0;
             font-size: 1rem;
-            color: #e5e7eb;
+            color: var(--title-soft);
         }
 
         .content-cover-preview {
@@ -743,7 +828,7 @@
             position: fixed;
             inset: 0;
             z-index: 150;
-            background: rgba(0, 0, 0, 0.9);
+            background: var(--image-preview-bg);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -771,7 +856,7 @@
             object-fit: contain;
             border-radius: 0.7rem;
             border: 1px solid var(--line-2);
-            background: #0a0a0a;
+            background: var(--image-preview-surface);
         }
 
         .read-shot-head {
@@ -799,7 +884,7 @@
             font-size: 0.68rem;
             padding: 0.18rem 0.45rem;
             border-radius: 999px;
-            background: #262626;
+            background: var(--surface-strong);
             border: 1px solid var(--line-2);
             color: var(--muted);
             font-weight: 700;
@@ -810,7 +895,7 @@
         }
 
         .read-row strong {
-            color: #d1d5db;
+            color: var(--title-soft);
             font-size: 0.82rem;
             display: block;
             margin-bottom: 0.22rem;
@@ -838,6 +923,7 @@
             body { padding: 1rem; }
             .shot-card { flex-direction: column; }
             .container { padding: 1rem; }
+            .theme-toggle { top: 0.85rem; right: 0.85rem; }
             .day-cell { min-height: 92px; height: 92px; padding: 0.42rem; }
             .day-title { font-size: 0.58rem; max-height: 2.3em; }
             .cover-wrap { align-items: flex-start; }

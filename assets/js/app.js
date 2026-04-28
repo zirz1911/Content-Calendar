@@ -1,4 +1,5 @@
     const STORAGE_KEY = "content_calendar_v1";
+    const THEME_STORAGE_KEY = "content_calendar_theme";
     const plan30Days = [
         "ท่าแปลกแก้บัญชีบิน", "เลิกใช้ Chrome/Safari ฟาร์ม", "Proxy คืออะไร?",
         "วิธีเช็ค IP และลายนิ้วมือ", "จำลองคอม 100 เครื่อง", "mbasic ล็อกอินครั้งแรก",
@@ -43,6 +44,52 @@
     let viewedMonth = new Date(CONTENT_START_DATE.getFullYear(), CONTENT_START_DATE.getMonth(), 1);
     let saveTimer = null;
     let pendingEditNotification = null;
+
+    function normalizeTheme(theme) {
+        return theme === "dark" ? "dark" : "light";
+    }
+
+    function getSavedTheme() {
+        try {
+            return normalizeTheme(localStorage.getItem(THEME_STORAGE_KEY));
+        } catch (e) {
+            return "light";
+        }
+    }
+
+    function updateThemeToggleLabel(theme) {
+        const button = document.getElementById("theme-toggle");
+        if (!button) return;
+        const nextTheme = theme === "dark" ? "light" : "dark";
+        button.textContent = nextTheme === "dark" ? "Dark Theme" : "Bright Theme";
+        button.setAttribute("aria-pressed", String(theme === "dark"));
+        button.setAttribute("aria-label", "Switch to " + nextTheme + " theme");
+        button.title = "Switch to " + nextTheme + " theme";
+    }
+
+    function applyTheme(theme) {
+        const safeTheme = normalizeTheme(theme);
+        document.body.setAttribute("data-theme", safeTheme);
+        updateThemeToggleLabel(safeTheme);
+    }
+
+    function toggleTheme() {
+        const currentTheme = normalizeTheme(document.body.getAttribute("data-theme"));
+        const nextTheme = currentTheme === "dark" ? "light" : "dark";
+        applyTheme(nextTheme);
+        try {
+            localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+        } catch (e) {
+            // Ignore storage failures and keep the in-session toggle working.
+        }
+    }
+
+    function initTheme() {
+        applyTheme(getSavedTheme());
+        const button = document.getElementById("theme-toggle");
+        if (!button) return;
+        button.onclick = toggleTheme;
+    }
 
     function newId(prefix) {
         return prefix + "_" + Math.random().toString(36).slice(2, 10);
@@ -1082,6 +1129,7 @@
     }
 
     window.onload = function() {
+        initTheme();
         setTelegramState("");
         renderCalendar();
     };
