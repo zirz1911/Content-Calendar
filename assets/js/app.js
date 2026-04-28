@@ -130,6 +130,7 @@
             status: "Draft",
             priority: "Priority",
             platforms: [],
+            coverImages: [],
             coverImage: "",
             shots: [defaultShot(1)]
         };
@@ -409,7 +410,18 @@
         content.type = normalizeContentType(content.type);
         content.headline = content.headline || base.headline;
         content.description = content.description || defaultDescriptionForType(content.type);
-        content.coverImage = typeof content.coverImage === "string" ? content.coverImage : "";
+        const normalizedCoverImages = Array.isArray(content.coverImages)
+            ? content.coverImages.filter((item) => typeof item === "string" && item)
+            : [];
+        if (normalizedCoverImages.length > 0) {
+            content.coverImages = normalizedCoverImages;
+            content.coverImage = normalizedCoverImages[0];
+        } else if (typeof content.coverImage === "string" && content.coverImage) {
+            content.coverImages = [content.coverImage];
+        } else {
+            content.coverImages = [];
+            content.coverImage = "";
+        }
 
         if (!content.status) {
             const sourceShots = Array.isArray(rawContent && rawContent.shots) ? rawContent.shots : [];
@@ -472,6 +484,7 @@
             description: rawDay.description,
             status: rawDay.status,
             priority: rawDay.priority,
+            coverImages: rawDay.coverImages,
             coverImage: rawDay.coverImage,
             platforms: rawDay.platforms,
             shots: rawDay.shots
@@ -748,22 +761,36 @@
 
     function renderCover() {
         const content = getCurrentContent();
-        const preview = document.getElementById("cover-preview");
         const uploadText = document.getElementById("cover-upload-text");
         const removeBtn = document.getElementById("cover-remove-btn");
+        const gallery = document.getElementById("cover-gallery");
         if (!content) return;
 
-        if (content.coverImage) {
-            preview.src = content.coverImage;
-            preview.classList.add("has-image");
+        const images = Array.isArray(content.coverImages) ? content.coverImages : [];
+        if (images.length > 0) {
             uploadText.classList.add("hidden");
             removeBtn.classList.remove("hidden");
         } else {
-            preview.src = "";
-            preview.classList.remove("has-image");
             uploadText.classList.remove("hidden");
             removeBtn.classList.add("hidden");
         }
+
+        if (!gallery) return;
+        gallery.innerHTML = "";
+        if (images.length === 0) {
+            gallery.innerHTML = `<p class="cover-empty-note">No image resources uploaded yet.</p>`;
+            return;
+        }
+
+        images.forEach((imageSrc, index) => {
+            const card = document.createElement("div");
+            card.className = "cover-thumb";
+            card.innerHTML = `
+                <img src="${escapeHtml(imageSrc)}" alt="Resource image ${index + 1}" onclick="openImagePreviewFromElement(this)">
+                <button type="button" onclick="removeCoverImage(${index})">Remove Image ${index + 1}</button>
+            `;
+            gallery.appendChild(card);
+        });
     }
 
     function renderDayMetaControls() {
@@ -888,8 +915,11 @@
         const platformBadges = (content.platforms || [])
             .map((platform) => `<span class="mini-badge">${escapeHtml(platform)}</span>`)
             .join("");
-        const coverHtml = content.coverImage
-            ? `<img class="content-cover-preview clickable" src="${escapeHtml(content.coverImage)}" alt="Content cover" onclick="openImagePreviewFromElement(this)">`
+        const coverImages = Array.isArray(content.coverImages) ? content.coverImages : [];
+        const coverHtml = coverImages.length > 0
+            ? `<div class="content-cover-grid">${coverImages.map((imageSrc, index) => (
+                `<img class="content-cover-preview clickable" src="${escapeHtml(imageSrc)}" alt="Content resource ${index + 1}" onclick="openImagePreviewFromElement(this)">`
+            )).join("")}</div>`
             : "";
         const shotsHtml = (Array.isArray(content.shots) ? content.shots : []).map((shot) => {
             const speech = escapeHtml(shot.speech || "").replaceAll("\n", "<br>");
@@ -912,7 +942,7 @@
         }).join("");
         const descriptionText = escapeHtml(content.description || "-").replaceAll("\n", "<br>");
         const detailLabel = safeType === "Post Text" ? "Post Content" : "Description";
-        const emptyCoverHtml = typeMeta.showCover ? `<p class="read-empty-note">No cover image</p>` : "";
+        const emptyCoverHtml = typeMeta.showCover ? `<p class="read-empty-note">No image resources</p>` : "";
         const detailByType = safeType === "Video"
             ? (coverHtml || emptyCoverHtml) + shotsHtml
             : (safeType === "Post Image"
@@ -1094,20 +1124,42 @@
             input.value = "";
             return;
         }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const content = getCurrentContent();
-            if (!content || !getTypeMeta(content.type).showCover) return;
-            content.coverImage = e.target.result;
-            renderCover();
-            queueSaveLabel(true);
-        };
-        reader.readAsDataURL(input.files[0]);
+        const files = Array.from(input.files);
+        let pending = files.length;
+        const nextImages = new Array(files.length);
+        files.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (typeof e.target.result === "string" && e.target.result) {
+                    nextImages[index] = e.target.result;
+                }
+                pending -= 1;
+                if (pending > 0) return;
+                const content = getCurrentContent();
+                if (!content || !getTypeMeta(content.type).showCover) return;
+                content.coverImages = (Array.isArray(content.coverImages) ? content.coverImages : []).concat(nextImages.filter(Boolean));
+                content.coverImage = content.coverImages[0] || "";
+                renderCover();
+                queueSaveLabel(true);
+            };
+            reader.readAsDataURL(file);
+        });
+        input.value = "";
+    }
+
+    function removeCoverImage(index) {
+        const content = getCurrentContent();
+        if (!content || !Array.isArray(content.coverImages) || !content.coverImages[index]) return;
+        content.coverImages.splice(index, 1);
+        content.coverImage = content.coverImages[0] || "";
+        renderCover();
+        queueSaveLabel(true);
     }
 
     function clearCoverImage() {
         const content = getCurrentContent();
         if (!content) return;
+        content.coverImages = [];
         content.coverImage = "";
         renderCover();
         queueSaveLabel(true);

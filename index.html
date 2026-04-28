@@ -81,13 +81,13 @@
             </div>
             <div id="platform-grid" class="platform-grid"></div>
             <div id="cover-section" class="cover-wrap">
-                <div class="cover-label">Cover Image</div>
+                <div class="cover-label">Image Resources</div>
                 <label class="cover-upload">
-                    <span id="cover-upload-text" class="upload-text">+ Add cover image</span>
-                    <input id="cover-input" type="file" accept="image/*" onchange="handleCoverUpload(this)">
-                    <img id="cover-preview" src="" alt="Content cover">
+                    <span id="cover-upload-text" class="upload-text">+ Add image resources</span>
+                    <input id="cover-input" type="file" accept="image/*" multiple onchange="handleCoverUpload(this)">
                 </label>
-                <button id="cover-remove-btn" type="button" class="hidden" onclick="clearCoverImage()">Remove Cover</button>
+                <button id="cover-remove-btn" type="button" class="hidden" onclick="clearCoverImage()">Remove All Images</button>
+                <div id="cover-gallery" class="cover-gallery"></div>
             </div>
         </div>
 

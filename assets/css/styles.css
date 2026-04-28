@@ -471,15 +471,45 @@
 
         .cover-upload input[type="file"] { display: none; }
 
-        .cover-upload img {
+        .cover-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.7rem;
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background-color: var(--cover-preview-bg);
-            display: none;
         }
 
-        .cover-upload img.has-image { display: block; }
+        .cover-thumb {
+            background: var(--surface-soft);
+            border: 1px solid var(--line-2);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            min-height: 138px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cover-thumb img {
+            width: 100%;
+            height: 104px;
+            object-fit: cover;
+            background-color: var(--cover-preview-bg);
+            cursor: zoom-in;
+        }
+
+        .cover-thumb button {
+            border-radius: 0;
+            border: 0;
+            border-top: 1px solid var(--line-2);
+            background: transparent;
+            padding: 0.5rem 0.65rem;
+            font-size: 0.74rem;
+        }
+
+        .cover-empty-note {
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
         .upload-text.hidden { display: none; }
 
         [contenteditable="true"] {
@@ -817,6 +847,13 @@
             border: 1px solid var(--line-2);
             border-radius: 0.6rem;
             display: block;
+            margin-bottom: 0.7rem;
+        }
+
+        .content-cover-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.8rem;
             margin-bottom: 0.7rem;
         }
 
