@@ -4,16 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adstomate 30-Day Content Planner</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css?v=20260502-copy-icon-fields">
 </head>
 <body>
 <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Dark Theme</button>
-<div class="container">
+<div id="auth-gate" class="auth-gate">
+    <div class="auth-card auth-card-compact">
+        <div id="team-picker" class="team-picker">
+            <button type="button" class="team-choice" data-team="team-a" onclick="selectTeamCard('team-a')">
+                <span class="team-choice-label">TEAM A</span>
+            </button>
+            <button type="button" class="team-choice" data-team="team-b" onclick="selectTeamCard('team-b')">
+                <span class="team-choice-label">TEAM B</span>
+            </button>
+        </div>
+        <div id="auth-password-step" class="auth-password-step hidden">
+            <div id="selected-team-label" class="selected-team-label">TEAM A</div>
+            <input id="team-password" class="auth-input" type="password" placeholder="Enter team password" autocomplete="current-password">
+            <div class="auth-actions">
+                <button type="button" class="auth-back-btn" onclick="resetTeamSelection()">Back</button>
+                <button id="auth-submit" type="button" class="btn-primary auth-submit" onclick="submitTeamAccess()">Enter</button>
+            </div>
+        </div>
+        <div id="auth-error" class="auth-error hidden" aria-live="polite"></div>
+    </div>
+</div>
+<div id="app-shell" class="container hidden">
     <div id="calendar-view">
         <div class="calendar-topbar">
             <h1 class="brand-title"><span class="brand-icon">◉</span> Adstomate Content Calendar</h1>
             <div class="calendar-controls">
+                <div id="team-badge" class="team-badge">TEAM A</div>
                 <div id="month-label" class="month-label">APRIL 2026</div>
+                <button id="social-inbox-open-btn" type="button" onclick="showSocialInbox()">Social Inbox (In Maintenance)</button>
+                <button type="button" onclick="logoutTeam()">Switch Team</button>
             </div>
         </div>
         <div class="calendar-shell">
@@ -34,6 +58,41 @@
             <button type="button" onclick="prevMonth()">⬅ Previous Month</button>
             <button type="button" onclick="goToCurrentDay()">Current Day</button>
             <button type="button" onclick="nextMonth()">Next Month ➜</button>
+        </div>
+    </div>
+
+    <div id="social-inbox-view" class="hidden">
+        <div class="nav-bar">
+            <div class="nav-group">
+                <button type="button" onclick="showCalendar()">⬅ กลับหน้าปฏิทิน</button>
+                <button type="button" onclick="loadSocialInbox()">Refresh</button>
+            </div>
+            <div id="social-inbox-state" class="save-state">ยังไม่ได้เชื่อม Social</div>
+        </div>
+
+        <div class="social-inbox-layout">
+            <aside class="social-sidebar">
+                <div class="social-sidebar-title">Platforms</div>
+                <div id="social-platform-menu" class="social-platform-menu"></div>
+                <button type="button" class="btn-primary social-connect-btn" onclick="connectMetaAccount()">Connect Meta</button>
+                <button type="button" class="btn-primary social-connect-btn" onclick="seedSocialAccount()">+ Add Placeholder</button>
+                <div class="social-sidebar-title social-account-title">Accounts</div>
+                <div id="social-connected-accounts" class="social-connected-accounts"></div>
+            </aside>
+
+            <main class="social-main">
+                <div class="social-feed-head">
+                    <div>
+                        <h2 id="social-feed-title">All Platforms</h2>
+                        <p id="social-feed-sub">รวมข้อความและคอมเมนต์จาก Facebook / Instagram</p>
+                    </div>
+                    <div class="nav-group">
+                        <button type="button" onclick="seedSocialItem('message')">+ Sample DM</button>
+                        <button type="button" onclick="seedSocialItem('comment')">+ Sample Comment</button>
+                    </div>
+                </div>
+                <div id="social-feed-list" class="social-feed-list"></div>
+            </main>
         </div>
     </div>
 
@@ -92,6 +151,20 @@
         </div>
 
         <div id="video-section">
+            <div class="bulk-shot-import">
+                <div class="bulk-shot-head">
+                    <div>
+                        <p class="field-label">Paste Storyboard</p>
+                        <p class="bulk-shot-note">วางสคริปต์ Shot หลายอัน แล้วให้ระบบสร้าง Shot / บทพูด / Text บนจอให้อัตโนมัติ</p>
+                    </div>
+                    <div class="nav-group">
+                        <button type="button" onclick="toggleBulkShotImport()">Paste Text</button>
+                        <button type="button" class="btn-primary" onclick="importBulkShots()">Import Shots</button>
+                    </div>
+                </div>
+                <textarea id="bulk-shot-input" class="bulk-shot-input hidden" placeholder="วางข้อความที่มี Shot 1, บทพูด:, Text บนจอ: ที่นี่"></textarea>
+                <div id="bulk-shot-state" class="bulk-shot-state hidden" aria-live="polite"></div>
+            </div>
             <div class="shots-container" id="storyboard-container"></div>
             <button id="add-shot-btn" type="button" class="add-btn" onclick="addShot()">+ เพิ่มช็อตใหม่ (Add New Shot)</button>
         </div>
@@ -151,6 +224,6 @@
     </div>
 </div>
 
-<script src="assets/js/app.js"></script>
+<script src="assets/js/app.js?v=20260502-copy-icon-fields"></script>
 </body>
 </html>

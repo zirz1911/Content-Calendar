@@ -111,6 +111,117 @@
 
         .hidden { display: none !important; }
 
+        .auth-gate {
+            min-height: calc(100vh - 4rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-card {
+            width: min(100%, 460px);
+            background: linear-gradient(180deg, var(--panel) 0%, var(--surface) 100%);
+            border: 1px solid color-mix(in oklab, var(--accent) 28%, var(--line));
+            border-radius: 1.1rem;
+            box-shadow: var(--app-shadow);
+            padding: 1.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .auth-card-compact {
+            width: min(100%, 560px);
+            padding: 1.2rem;
+        }
+
+        .team-picker {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            width: 100%;
+        }
+
+        .team-choice {
+            min-height: 190px;
+            border-radius: 1rem;
+            border: 1px solid var(--line-2);
+            background: linear-gradient(180deg, var(--surface-soft) 0%, var(--panel) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .team-choice.active {
+            border-color: var(--accent);
+            background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 12%, var(--surface-soft)) 0%, var(--panel) 100%);
+            box-shadow: 0 0 18px color-mix(in oklab, var(--accent) 20%, transparent);
+        }
+
+        .team-choice-label {
+            font-family: "Silkscreen", sans-serif;
+            font-size: 1.2rem;
+            color: var(--title-soft);
+        }
+
+        .auth-password-step {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .selected-team-label {
+            font-family: "Silkscreen", sans-serif;
+            font-size: 1rem;
+            color: var(--accent);
+            text-align: center;
+        }
+
+        .auth-actions {
+            display: flex;
+            gap: 0.7rem;
+        }
+
+        .auth-back-btn {
+            flex: 1;
+            padding: 0.52rem 0.7rem;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 0.8rem 0.9rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--line-2);
+            background: var(--surface-soft);
+            color: var(--text);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .auth-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
+        }
+
+        .auth-submit {
+            flex: 1;
+            padding: 0.85rem 1rem;
+        }
+
+        .auth-error {
+            padding: 0.75rem 0.85rem;
+            border-radius: 0.75rem;
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            color: var(--danger-text);
+            font-size: 0.85rem;
+            line-height: 1.35;
+        }
+
         .theme-toggle {
             position: fixed;
             top: 1.2rem;
@@ -156,6 +267,17 @@
             align-items: center;
             gap: 0.6rem;
             flex-wrap: wrap;
+        }
+
+        .team-badge {
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            color: var(--accent-contrast);
+            background: var(--accent);
+            border-radius: 999px;
+            padding: 0.36rem 0.62rem;
+            box-shadow: 0 0 12px color-mix(in oklab, var(--accent) 34%, transparent);
         }
 
         .calendar-footer-controls {
@@ -667,6 +789,61 @@
             min-height: 2.2rem;
         }
 
+        .bulk-shot-import {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 0.9rem;
+            padding: 0.9rem;
+            margin-bottom: 0.95rem;
+        }
+
+        .bulk-shot-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .bulk-shot-note {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.78rem;
+            line-height: 1.35;
+        }
+
+        .bulk-shot-input {
+            width: 100%;
+            min-height: 240px;
+            margin-top: 0.8rem;
+            padding: 0.75rem;
+            border-radius: 0.65rem;
+            border: 1px solid var(--line-2);
+            background: var(--surface-soft);
+            color: var(--text);
+            font: inherit;
+            font-size: 0.86rem;
+            line-height: 1.45;
+            resize: vertical;
+            outline: none;
+        }
+
+        .bulk-shot-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent);
+        }
+
+        .bulk-shot-state {
+            margin-top: 0.55rem;
+            color: var(--accent);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .bulk-shot-state.err {
+            color: var(--danger-text);
+        }
+
         .tags-container {
             display: flex;
             gap: 0.6rem;
@@ -931,11 +1108,46 @@
             margin-bottom: 0.55rem;
         }
 
+        .read-row-head {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.22rem;
+        }
+
         .read-row strong {
             color: var(--title-soft);
             font-size: 0.82rem;
-            display: block;
-            margin-bottom: 0.22rem;
+            display: inline-flex;
+            margin-bottom: 0;
+        }
+
+        .read-copy-field {
+            position: relative;
+        }
+
+        .copy-read-btn {
+            position: absolute;
+            top: 0.42rem;
+            right: 0.42rem;
+            width: 1.65rem;
+            height: 1.65rem;
+            padding: 0;
+            border-radius: 0.42rem;
+            font-size: 0.9rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            background: var(--button-bg);
+            z-index: 1;
+        }
+
+        .copy-read-btn.copied {
+            color: var(--accent-contrast);
+            background: var(--accent);
+            border-color: transparent;
         }
 
         .read-row p {
@@ -943,7 +1155,7 @@
             background: var(--surface-soft);
             border: 1px solid var(--line-2);
             border-radius: 0.5rem;
-            padding: 0.55rem;
+            padding: 0.55rem 2.55rem 0.55rem 0.55rem;
             font-size: 0.9rem;
             line-height: 1.35;
             white-space: normal;
@@ -956,8 +1168,193 @@
             font-size: 0.82rem;
         }
 
+        .social-inbox-layout {
+            min-height: 640px;
+            display: grid;
+            grid-template-columns: 238px minmax(0, 1fr);
+            gap: 0.9rem;
+        }
+
+        .social-sidebar,
+        .social-main {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 0.9rem;
+        }
+
+        .social-sidebar {
+            padding: 0.85rem;
+        }
+
+        .social-sidebar-title {
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 0.6rem;
+        }
+
+        .social-platform-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .social-platform-btn {
+            width: 100%;
+            min-height: 48px;
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 0.55rem;
+            text-align: left;
+            border-radius: 0.55rem;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .social-platform-btn.active {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .social-platform-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 0.55rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface-strong);
+            color: var(--title-soft);
+            font-size: 0.76rem;
+            font-weight: 900;
+        }
+
+        .social-platform-label {
+            color: var(--title-soft);
+            font-size: 0.84rem;
+            font-weight: 800;
+            min-width: 0;
+        }
+
+        .social-alert-badge {
+            min-width: 1.35rem;
+            height: 1.35rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.34rem;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 0.68rem;
+            font-weight: 900;
+        }
+
+        .social-connect-btn {
+            width: 100%;
+            margin-top: 0.8rem;
+        }
+
+        .social-account-title {
+            margin-top: 1rem;
+        }
+
+        .social-connected-accounts {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .social-connected-card {
+            background: var(--card-bg);
+            border: 1px solid var(--line-2);
+            border-radius: 0.65rem;
+            padding: 0.65rem;
+        }
+
+        .social-connected-card button {
+            width: 100%;
+            margin-top: 0.55rem;
+            padding: 0.42rem 0.55rem;
+            font-size: 0.72rem;
+        }
+
+        .social-main {
+            padding: 1rem;
+            min-width: 0;
+        }
+
+        .social-feed-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.8rem;
+            margin-bottom: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .social-feed-head h2 {
+            margin: 0 0 0.18rem 0;
+            font-size: 1.12rem;
+            color: var(--title-soft);
+        }
+
+        .social-feed-head p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.82rem;
+            line-height: 1.35;
+        }
+
+        .social-feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .social-feed-card {
+            background: var(--card-bg);
+            border: 1px solid var(--line-2);
+            border-radius: 0.7rem;
+            padding: 0.8rem;
+        }
+
+        .social-feed-top {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .social-title {
+            color: var(--title-soft);
+            font-weight: 800;
+            font-size: 0.9rem;
+            margin-bottom: 0.18rem;
+        }
+
+        .social-sub {
+            color: var(--muted);
+            font-size: 0.74rem;
+        }
+
+        .social-empty {
+            color: var(--muted);
+            border: 1px dashed var(--line-2);
+            border-radius: 0.7rem;
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.84rem;
+        }
+
         @media (max-width: 760px) {
             body { padding: 1rem; }
+            .auth-gate { min-height: calc(100vh - 2rem); }
+            .auth-card { padding: 1rem; }
+            .team-picker { grid-template-columns: 1fr; }
+            .team-choice { min-height: 128px; }
+            .auth-actions { flex-direction: column; }
             .shot-card { flex-direction: column; }
             .container { padding: 1rem; }
             .theme-toggle { top: 0.85rem; right: 0.85rem; }
@@ -972,4 +1369,7 @@
             .day-number { width: 1.45rem; height: 1.45rem; font-size: 0.8rem; }
             .post-badge, .content-day-tag { font-size: 0.52rem; }
             .telegram-controls { width: 100%; justify-content: flex-start; }
+            .social-inbox-layout { grid-template-columns: 1fr; min-height: 0; }
+            .social-sidebar { position: static; }
+            .social-platform-menu { display: grid; grid-template-columns: 1fr; }
         }

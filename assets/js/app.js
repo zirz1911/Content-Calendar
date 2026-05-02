@@ -1,5 +1,8 @@
     const STORAGE_KEY = "content_calendar_v1";
     const THEME_STORAGE_KEY = "content_calendar_theme";
+    const AUTH_STORAGE_KEY = "content_calendar_auth_v1";
+    const TEAM_A_KEY = "team-a";
+    const TEAM_B_KEY = "team-b";
     const plan30Days = [
         "ท่าแปลกแก้บัญชีบิน", "เลิกใช้ Chrome/Safari ฟาร์ม", "Proxy คืออะไร?",
         "วิธีเช็ค IP และลายนิ้วมือ", "จำลองคอม 100 เครื่อง", "mbasic ล็อกอินครั้งแรก",
@@ -38,12 +41,185 @@
     const contentSchedule = buildContentSchedule();
     const contentByDate = new Map(contentSchedule.map((item) => [item.dateKey, item]));
 
-    let appState = loadState();
+    let appState = { days: {} };
+    let authToken = "";
+    let selectedTeamKey = "";
+    let currentTeamKey = "";
+    let currentTeamLabel = "";
     let currentDateKey = null;
     let actionDateKey = null;
     let viewedMonth = new Date(CONTENT_START_DATE.getFullYear(), CONTENT_START_DATE.getMonth(), 1);
     let saveTimer = null;
     let pendingEditNotification = null;
+    let socialInbox = {
+        accounts: [],
+        conversations: [],
+        messages: [],
+        comments: [],
+        syncCursors: {},
+        updatedAt: ""
+    };
+    let selectedSocialPlatform = "all";
+    const SOCIAL_PLATFORMS = [
+        { key: "all", label: "All", icon: "A" },
+        { key: "facebook", label: "Facebook", icon: "f" },
+        { key: "instagram", label: "Instagram", icon: "IG" }
+    ];
+
+    function normalizeTeamKey(teamKey) {
+        return teamKey === TEAM_B_KEY ? TEAM_B_KEY : TEAM_A_KEY;
+    }
+
+    function getTeamLabel(teamKey) {
+        return normalizeTeamKey(teamKey) === TEAM_B_KEY ? "TEAM B" : "TEAM A";
+    }
+
+    function isTeamBContext() {
+        return normalizeTeamKey(currentTeamKey || selectedTeamKey || TEAM_A_KEY) === TEAM_B_KEY;
+    }
+
+    function shouldImportLocalBackup() {
+        return !isTeamBContext();
+    }
+
+    function updateTeamSelectionUI() {
+        const buttons = Array.from(document.querySelectorAll(".team-choice"));
+        buttons.forEach((button) => {
+            const isActive = button.dataset.team === selectedTeamKey;
+            button.classList.toggle("active", isActive);
+        });
+        const passwordStep = document.getElementById("auth-password-step");
+        const selectedLabel = document.getElementById("selected-team-label");
+        if (passwordStep) {
+            passwordStep.classList.toggle("hidden", !selectedTeamKey);
+        }
+        if (selectedLabel) {
+            selectedLabel.textContent = getTeamLabel(selectedTeamKey || TEAM_A_KEY);
+        }
+    }
+
+    function selectTeamCard(teamKey) {
+        selectedTeamKey = normalizeTeamKey(teamKey);
+        setAuthError("");
+        updateTeamSelectionUI();
+        const passwordInput = document.getElementById("team-password");
+        if (passwordInput) {
+            passwordInput.value = "";
+            passwordInput.focus();
+        }
+    }
+
+    function resetTeamSelection() {
+        selectedTeamKey = "";
+        setAuthError("");
+        updateTeamSelectionUI();
+        const passwordInput = document.getElementById("team-password");
+        if (passwordInput) {
+            passwordInput.value = "";
+        }
+    }
+
+    function getScopedStorageKey(baseKey) {
+        return baseKey + "_" + normalizeTeamKey(currentTeamKey || TEAM_A_KEY);
+    }
+
+    function updateTeamBadge() {
+        const badge = document.getElementById("team-badge");
+        if (!badge) return;
+        badge.textContent = currentTeamLabel || getTeamLabel(currentTeamKey);
+    }
+
+    function isTeamAActive() {
+        return normalizeTeamKey(currentTeamKey || selectedTeamKey || TEAM_A_KEY) === TEAM_A_KEY;
+    }
+
+    function updateSocialInboxAccessUI() {
+        const button = document.getElementById("social-inbox-open-btn");
+        if (!button) return;
+        button.classList.toggle("hidden", !isTeamAActive());
+    }
+
+    function setActiveTeam(teamKey, teamLabel) {
+        currentTeamKey = normalizeTeamKey(teamKey);
+        currentTeamLabel = teamLabel || getTeamLabel(currentTeamKey);
+        updateTeamBadge();
+        updateSocialInboxAccessUI();
+    }
+
+    function saveAuthSession() {
+        try {
+            sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+                token: authToken,
+                teamKey: currentTeamKey,
+                teamLabel: currentTeamLabel
+            }));
+        } catch (e) {
+            // Ignore session storage failures.
+        }
+    }
+
+    function loadAuthSession() {
+        try {
+            const raw = sessionStorage.getItem(AUTH_STORAGE_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object" || !parsed.token || !parsed.teamKey) {
+                return null;
+            }
+            return {
+                token: String(parsed.token),
+                teamKey: normalizeTeamKey(parsed.teamKey),
+                teamLabel: parsed.teamLabel ? String(parsed.teamLabel) : getTeamLabel(parsed.teamKey)
+            };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function clearAuthSession() {
+        authToken = "";
+        currentTeamKey = "";
+        currentTeamLabel = "";
+        try {
+            sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        } catch (e) {
+            // Ignore session storage failures.
+        }
+    }
+
+    function setAuthError(message) {
+        const el = document.getElementById("auth-error");
+        if (!el) return;
+        if (!message) {
+            el.textContent = "";
+            el.classList.add("hidden");
+            return;
+        }
+        el.textContent = message;
+        el.classList.remove("hidden");
+    }
+
+    function showAuthGate() {
+        const gate = document.getElementById("auth-gate");
+        const appShell = document.getElementById("app-shell");
+        if (gate) gate.classList.remove("hidden");
+        if (appShell) appShell.classList.add("hidden");
+        updateTeamSelectionUI();
+    }
+
+    function showAppShell() {
+        const gate = document.getElementById("auth-gate");
+        const appShell = document.getElementById("app-shell");
+        if (gate) gate.classList.add("hidden");
+        if (appShell) appShell.classList.remove("hidden");
+        updateTeamBadge();
+    }
+
+    function closeAllModals() {
+        closeDayAction();
+        closeContentCardsModal();
+        closeContentFlowModal();
+    }
 
     function normalizeTheme(theme) {
         return theme === "dark" ? "dark" : "light";
@@ -116,6 +292,20 @@
     }
 
     function defaultContent(dateKey, idx) {
+        if (isTeamBContext()) {
+            return {
+                id: newId("content"),
+                type: "Video",
+                headline: "",
+                description: "",
+                status: "Draft",
+                priority: "Priority",
+                platforms: [],
+                coverImages: [],
+                coverImage: "",
+                shots: [defaultShot(1)]
+            };
+        }
         const suggested = contentByDate.get(dateKey);
         const dateObj = parseDateKey(dateKey);
         const suggestedHeadline = suggested ? ("Day " + suggested.dayNum + ": " + suggested.title) : "";
@@ -137,6 +327,12 @@
     }
 
     function defaultDay(dateKey) {
+        if (isTeamBContext()) {
+            return {
+                selectedContentId: "",
+                contents: []
+            };
+        }
         const content = defaultContent(dateKey, 1);
         return {
             selectedContentId: content.id,
@@ -211,31 +407,102 @@
         renderCalendar();
     }
 
-    function loadState() {
+    function normalizeStateShape(rawState) {
+        if (!rawState || typeof rawState !== "object" || !rawState.days || typeof rawState.days !== "object") {
+            return { days: {} };
+        }
+        const migratedDays = {};
+        Object.entries(rawState.days).forEach(([key, value]) => {
+            if (/^\d+$/.test(key)) {
+                const dayNum = Number(key);
+                const mapped = contentSchedule[dayNum - 1];
+                if (mapped) {
+                    migratedDays[mapped.dateKey] = value;
+                }
+                return;
+            }
+            migratedDays[key] = value;
+        });
+        return { days: migratedDays };
+    }
+
+    function loadLocalState() {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = localStorage.getItem(getScopedStorageKey(STORAGE_KEY));
             if (!raw) {
                 return { days: {} };
             }
-            const parsed = JSON.parse(raw);
-            if (!parsed.days || typeof parsed.days !== "object") {
-                return { days: {} };
-            }
-            const migratedDays = {};
-            Object.entries(parsed.days).forEach(([key, value]) => {
-                if (/^\d+$/.test(key)) {
-                    const dayNum = Number(key);
-                    const mapped = contentSchedule[dayNum - 1];
-                    if (mapped) {
-                        migratedDays[mapped.dateKey] = value;
-                    }
-                    return;
-                }
-                migratedDays[key] = value;
-            });
-            return { days: migratedDays };
+            return normalizeStateShape(JSON.parse(raw));
         } catch (e) {
             return { days: {} };
+        }
+    }
+
+    function hasSavedDays(state) {
+        return !!(state && state.days && Object.keys(state.days).length > 0);
+    }
+
+    async function fetchWithTimeout(resource, options, timeoutMs) {
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), timeoutMs || 5000);
+        try {
+            const nextOptions = Object.assign({}, options || {}, { signal: controller.signal });
+            return await fetch(resource, nextOptions);
+        } finally {
+            window.clearTimeout(timer);
+        }
+    }
+
+    async function apiFetch(resource, options, timeoutMs) {
+        const nextOptions = Object.assign({}, options || {});
+        const nextHeaders = Object.assign({}, nextOptions.headers || {});
+        if (authToken) {
+            nextHeaders["x-auth-token"] = authToken;
+        }
+        nextOptions.headers = nextHeaders;
+        return fetchWithTimeout(resource, nextOptions, timeoutMs);
+    }
+
+    async function loadState() {
+        const localState = loadLocalState();
+        try {
+            const response = await apiFetch("/api/state", null, 5000);
+            if (response.status === 401) {
+                const unauthorizedError = new Error("Unauthorized");
+                unauthorizedError.code = "UNAUTHORIZED";
+                throw unauthorizedError;
+            }
+            if (!response.ok) {
+                throw new Error("Request failed: " + response.status);
+            }
+            const payload = await response.json();
+            if (payload && payload.team) {
+                setActiveTeam(payload.team.key, payload.team.label);
+            }
+            const remoteState = normalizeStateShape(payload && payload.state ? payload.state : payload);
+            if (shouldImportLocalBackup() && !hasSavedDays(remoteState) && hasSavedDays(localState)) {
+                try {
+                    await apiFetch("/api/state", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(localState)
+                    }, 5000);
+                } catch (syncError) {
+                    // Ignore migration sync failures and continue with local data.
+                }
+                return localState;
+            }
+            try {
+                localStorage.setItem(getScopedStorageKey(STORAGE_KEY), JSON.stringify(remoteState));
+            } catch (e) {
+                // Ignore local backup failures.
+            }
+            return remoteState;
+        } catch (e) {
+            if (e && e.code === "UNAUTHORIZED") {
+                throw e;
+            }
+            return localState;
         }
     }
 
@@ -301,13 +568,13 @@
     async function sendTelegramNotification(action, payload) {
         if (!payload) return;
         try {
-            const response = await fetch("/api/telegram-notify", {
+            const response = await apiFetch("/api/telegram-notify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     message: buildTelegramMessage(action, payload)
                 })
-            });
+            }, 8000);
             if (!response.ok) {
                 throw new Error("Request failed: " + response.status);
             }
@@ -321,14 +588,41 @@
         pendingEditNotification = getCurrentContentPayload(reason || "edited");
     }
 
-    function persistState(sendEditNotification) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-        flashSaveState("บันทึกแล้ว");
-        if (sendEditNotification && pendingEditNotification) {
-            const payload = pendingEditNotification;
-            pendingEditNotification = null;
-            const action = payload.reason === "saved" ? "save" : "edit";
-            sendTelegramNotification(action, payload);
+    async function persistState(sendEditNotification) {
+        try {
+            const response = await apiFetch("/api/state", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(appState)
+            }, 5000);
+            if (!response.ok) {
+                throw new Error("Request failed: " + response.status);
+            }
+            const saved = await response.json();
+            if (saved && saved.team) {
+                setActiveTeam(saved.team.key, saved.team.label);
+            }
+            if (saved && saved.state) {
+                appState = normalizeStateShape(saved.state);
+            }
+            try {
+                localStorage.setItem(getScopedStorageKey(STORAGE_KEY), JSON.stringify(appState));
+            } catch (e) {
+                // Ignore local backup failures.
+            }
+            flashSaveState("บันทึกแล้ว");
+            if (sendEditNotification && pendingEditNotification) {
+                const payload = pendingEditNotification;
+                pendingEditNotification = null;
+                const action = payload.reason === "saved" ? "save" : "edit";
+                sendTelegramNotification(action, payload);
+            }
+        } catch (e) {
+            const el = document.getElementById("save-state");
+            if (el) {
+                el.textContent = "Save failed";
+                el.classList.remove("ok");
+            }
         }
     }
 
@@ -367,6 +661,276 @@
             .replaceAll("'", "&#39;");
     }
 
+    function normalizeSocialInbox(rawInbox) {
+        const safeInbox = rawInbox && typeof rawInbox === "object" ? rawInbox : {};
+        return {
+            accounts: Array.isArray(safeInbox.accounts) ? safeInbox.accounts : [],
+            conversations: Array.isArray(safeInbox.conversations) ? safeInbox.conversations : [],
+            messages: Array.isArray(safeInbox.messages) ? safeInbox.messages : [],
+            comments: Array.isArray(safeInbox.comments) ? safeInbox.comments : [],
+            syncCursors: safeInbox.syncCursors && typeof safeInbox.syncCursors === "object" ? safeInbox.syncCursors : {},
+            updatedAt: typeof safeInbox.updatedAt === "string" ? safeInbox.updatedAt : ""
+        };
+    }
+
+    function platformLabel(platform) {
+        return platform === "instagram" ? "Instagram" : "Facebook";
+    }
+
+    function normalizeSocialPlatform(platform) {
+        return platform === "instagram" ? "instagram" : "facebook";
+    }
+
+    function setSocialInboxState(text, isOk) {
+        const el = document.getElementById("social-inbox-state");
+        if (!el) return;
+        el.textContent = text || "";
+        el.classList.toggle("ok", !!isOk);
+    }
+
+    function renderEmptySocialList(element, text) {
+        if (!element) return;
+        element.innerHTML = `<div class="social-empty">${escapeHtml(text)}</div>`;
+    }
+
+    function conversationTitle(message) {
+        const conversation = socialInbox.conversations.find((item) => item.id === message.conversationId);
+        return conversation && conversation.title ? conversation.title : (message.authorName || "Unknown");
+    }
+
+    function buildSocialFeedItems() {
+        const messages = socialInbox.messages.map((message) => ({
+            id: message.id,
+            kind: "message",
+            platform: normalizeSocialPlatform(message.platform),
+            title: conversationTitle(message),
+            text: message.text || "-",
+            meta: message.direction || "inbound",
+            createdAt: message.createdAt || ""
+        }));
+        const comments = socialInbox.comments.map((comment) => ({
+            id: comment.id,
+            kind: "comment",
+            platform: normalizeSocialPlatform(comment.platform),
+            title: comment.authorName || "Unknown",
+            text: comment.text || "-",
+            meta: comment.status || "open",
+            createdAt: comment.createdAt || ""
+        }));
+        return messages.concat(comments).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    }
+
+    function getSocialFeedItemsForSelectedPlatform() {
+        const items = buildSocialFeedItems();
+        if (selectedSocialPlatform === "all") return items;
+        return items.filter((item) => item.platform === selectedSocialPlatform);
+    }
+
+    function countSocialItems(platformKey) {
+        if (platformKey === "all") {
+            return socialInbox.messages.length + socialInbox.comments.length;
+        }
+        return buildSocialFeedItems().filter((item) => item.platform === platformKey).length;
+    }
+
+    function renderSocialPlatformMenu() {
+        const menu = document.getElementById("social-platform-menu");
+        if (!menu) return;
+        menu.innerHTML = "";
+        SOCIAL_PLATFORMS.forEach((platform) => {
+            const count = countSocialItems(platform.key);
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "social-platform-btn" + (selectedSocialPlatform === platform.key ? " active" : "");
+            button.onclick = () => selectSocialPlatform(platform.key);
+            button.innerHTML = `
+                <span class="social-platform-icon">${escapeHtml(platform.icon)}</span>
+                <span class="social-platform-label">${escapeHtml(platform.label)}</span>
+                ${count > 0 ? `<span class="social-alert-badge">${count}</span>` : ""}
+            `;
+            menu.appendChild(button);
+        });
+    }
+
+    function renderSocialConnectedAccounts() {
+        const list = document.getElementById("social-connected-accounts");
+        if (!list) return;
+        list.innerHTML = "";
+        if (!socialInbox.accounts.length) {
+            renderEmptySocialList(list, "ยังไม่มี account");
+            return;
+        }
+        socialInbox.accounts.forEach((account) => {
+            const card = document.createElement("div");
+            card.className = "social-connected-card";
+            const canSubscribe = account.platform === "facebook" && (account.status === "connected" || account.status === "missing-token-key");
+            const accountArg = JSON.stringify(String(account.id || ""));
+            card.innerHTML = `
+                <div class="social-title">${escapeHtml(account.name || "Unnamed")}</div>
+                <div class="social-sub">${escapeHtml(platformLabel(account.platform))} • ${escapeHtml(account.status || "pending")}</div>
+                ${canSubscribe ? `<button type="button" onclick='subscribeSocialAccount(${escapeHtml(accountArg)})'>Subscribe</button>` : ""}
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    function renderSocialFeed() {
+        const list = document.getElementById("social-feed-list");
+        const title = document.getElementById("social-feed-title");
+        const sub = document.getElementById("social-feed-sub");
+        if (!list) return;
+
+        const selected = SOCIAL_PLATFORMS.find((platform) => platform.key === selectedSocialPlatform) || SOCIAL_PLATFORMS[0];
+        const items = getSocialFeedItemsForSelectedPlatform();
+        if (title) {
+            title.textContent = selected.key === "all" ? "All Platforms" : selected.label;
+        }
+        if (sub) {
+            sub.textContent = items.length + " รายการ รวม DM และคอมเมนต์";
+        }
+
+        list.innerHTML = "";
+        if (!items.length) {
+            renderEmptySocialList(list, "ยังไม่มีข้อความหรือคอมเมนต์ในแพลตฟอร์มนี้");
+            return;
+        }
+        items.forEach((item) => {
+            const card = document.createElement("div");
+            card.className = "social-feed-card";
+            card.innerHTML = `
+                <div class="social-feed-top">
+                    <span class="mini-badge">${escapeHtml(platformLabel(item.platform))}</span>
+                    <span class="mini-badge">${item.kind === "message" ? "DM" : "Comment"}</span>
+                    <span class="mini-badge">${escapeHtml(item.meta)}</span>
+                </div>
+                <div class="social-title">${escapeHtml(item.title)}</div>
+                <p>${escapeHtml(item.text)}</p>
+                <div class="social-sub">${escapeHtml(item.createdAt)}</div>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    function renderSocialInbox() {
+        renderSocialPlatformMenu();
+        renderSocialConnectedAccounts();
+        renderSocialFeed();
+        const total = socialInbox.messages.length + socialInbox.comments.length;
+        const suffix = socialInbox.updatedAt ? " • " + socialInbox.updatedAt : "";
+        setSocialInboxState(total + " inbox items" + suffix, true);
+    }
+
+    function selectSocialPlatform(platformKey) {
+        selectedSocialPlatform = SOCIAL_PLATFORMS.some((platform) => platform.key === platformKey) ? platformKey : "all";
+        renderSocialInbox();
+    }
+
+    async function loadSocialInbox() {
+        setSocialInboxState("Loading social inbox...", false);
+        try {
+            const response = await apiFetch("/api/social-inbox", null, 5000);
+            if (!response.ok) {
+                throw new Error("Request failed: " + response.status);
+            }
+            const payload = await response.json();
+            socialInbox = normalizeSocialInbox(payload && payload.inbox);
+            renderSocialInbox();
+        } catch (error) {
+            setSocialInboxState("Load social inbox failed", false);
+        }
+    }
+
+    async function seedSocialAccount() {
+        const platform = socialInbox.accounts.some((account) => account.platform === "facebook") ? "instagram" : "facebook";
+        const name = platform === "instagram" ? "Instagram Business Placeholder" : "Facebook Page Placeholder";
+        const pageId = platform === "instagram" ? "ig-account-id" : "fb-page-id";
+        setSocialInboxState("Saving account placeholder...", false);
+        try {
+            const response = await apiFetch("/api/social-accounts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    platform,
+                    name,
+                    pageId,
+                    scopes: platform === "instagram"
+                        ? ["instagram_business_manage_messages", "instagram_manage_comments"]
+                        : ["pages_messaging", "pages_read_engagement", "pages_manage_engagement"]
+                })
+            }, 5000);
+            if (!response.ok) {
+                throw new Error("Request failed: " + response.status);
+            }
+            const payload = await response.json();
+            socialInbox = normalizeSocialInbox(payload && payload.inbox);
+            renderSocialInbox();
+        } catch (error) {
+            setSocialInboxState("Save account failed", false);
+        }
+    }
+
+    async function connectMetaAccount() {
+        setSocialInboxState("Preparing Meta connect...", false);
+        try {
+            const response = await apiFetch("/api/social-auth/meta/start", null, 5000);
+            const payload = await response.json();
+            if (!response.ok || !payload || !payload.authUrl) {
+                throw new Error(payload && payload.error ? payload.error : "Meta connect is not configured");
+            }
+            window.location.href = payload.authUrl;
+        } catch (error) {
+            setSocialInboxState(error && error.message ? error.message : "Meta connect failed", false);
+        }
+    }
+
+    async function subscribeSocialAccount(accountId) {
+        setSocialInboxState("Subscribing webhook...", false);
+        try {
+            const response = await apiFetch("/api/social-accounts/" + encodeURIComponent(accountId) + "/subscribe", {
+                method: "POST"
+            }, 10000);
+            const payload = await response.json();
+            if (!response.ok || !payload || !payload.ok) {
+                throw new Error(payload && (payload.detail || payload.error) ? (payload.detail || payload.error) : "Subscribe failed");
+            }
+            socialInbox = normalizeSocialInbox(payload && payload.inbox);
+            renderSocialInbox();
+        } catch (error) {
+            setSocialInboxState(error && error.message ? error.message : "Subscribe failed", false);
+        }
+    }
+
+    async function seedSocialItem(type) {
+        const isComment = type === "comment";
+        const targetPlatform = selectedSocialPlatform === "instagram" ? "instagram" : "facebook";
+        const account = socialInbox.accounts.find((item) => normalizeSocialPlatform(item.platform) === targetPlatform)
+            || { id: targetPlatform + ":manual", platform: targetPlatform };
+        setSocialInboxState("Saving sample item...", false);
+        try {
+            const response = await apiFetch("/api/social-inbox/items", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: isComment ? "comment" : "message",
+                    platform: account.platform || "facebook",
+                    accountId: account.id || "facebook:manual",
+                    authorName: isComment ? "Comment User" : "Inbox User",
+                    title: "Customer Thread",
+                    text: isComment ? "สนใจบริการนี้ ขอรายละเอียดเพิ่มค่ะ" : "ทักมาสอบถามแพ็กเกจครับ",
+                    postId: "sample-post"
+                })
+            }, 5000);
+            if (!response.ok) {
+                throw new Error("Request failed: " + response.status);
+            }
+            const payload = await response.json();
+            socialInbox = normalizeSocialInbox(payload && payload.inbox);
+            renderSocialInbox();
+        } catch (error) {
+            setSocialInboxState("Save sample failed", false);
+        }
+    }
+
     function normalizeEditableText(text) {
         return String(text || "")
             .replaceAll("\u00a0", " ")
@@ -380,6 +944,8 @@
             || text === "ข้อความบนจอ..."
             || text === "Day X: หัวข้อคลิป"
             || text === "รายละเอียด: แผนคลิป TikTok / Shorts"
+            || text === "Type headline here"
+            || text === "Type detail here"
             || defaultDescriptions.includes(text)
             || /^Shot \d+: \.\.\.$/.test(text);
     }
@@ -467,6 +1033,12 @@
         if (Array.isArray(rawDay.contents)) {
             const contents = rawDay.contents.map((content, idx) => normalizeContentItem(content, dateKey, idx));
             if (contents.length === 0) {
+                if (isTeamBContext()) {
+                    return {
+                        selectedContentId: "",
+                        contents: []
+                    };
+                }
                 contents.push(defaultContent(dateKey, 1));
             }
             const selectedId = contents.some((c) => c.id === rawDay.selectedContentId)
@@ -519,6 +1091,19 @@
         return currentDay.contents[0];
     }
 
+    function ensureCurrentContent(createIfMissing) {
+        const day = getCurrentDayState();
+        if (!day) return null;
+        let content = getCurrentContent(day);
+        if (!content && createIfMissing) {
+            const newContent = defaultContent(currentDateKey, day.contents.length + 1);
+            day.contents.push(newContent);
+            day.selectedContentId = newContent.id;
+            content = newContent;
+        }
+        return content;
+    }
+
     function dayStatusLabel(dayData) {
         if (!dayData || !Array.isArray(dayData.contents) || dayData.contents.length === 0) return "";
         const statuses = dayData.contents.map((content) => content.status || "Draft");
@@ -568,7 +1153,7 @@
 
             const cellDate = new Date(year, month, dayOfMonth);
             const dateKey = localDateKey(cellDate);
-            const contentItem = contentByDate.get(dateKey);
+            const contentItem = isTeamBContext() ? null : contentByDate.get(dateKey);
             let dayData = null;
             if (appState.days[dateKey]) {
                 dayData = normalizeDayState(appState.days[dateKey], dateKey);
@@ -611,6 +1196,14 @@
         if (!select || !day) return;
 
         select.innerHTML = "";
+        if (!Array.isArray(day.contents) || day.contents.length === 0) {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "No content yet";
+            select.appendChild(option);
+            select.value = "";
+            return;
+        }
         day.contents.forEach((content, idx) => {
             const option = document.createElement("option");
             const label = normalizeEditableText(content.headline || ("Content " + (idx + 1)));
@@ -684,6 +1277,7 @@
     function removeCurrentContent() {
         const day = getCurrentDayState();
         if (!day || day.contents.length <= 1) return;
+        if (!window.confirm("Delete this content?")) return;
         const idx = day.contents.findIndex((content) => content.id === day.selectedContentId);
         const removeIdx = idx >= 0 ? idx : 0;
         day.contents.splice(removeIdx, 1);
@@ -696,9 +1290,11 @@
     function renderPlatformControls() {
         const content = getCurrentContent();
         const platformGrid = document.getElementById("platform-grid");
-        if (!platformGrid || !content) return;
+        if (!platformGrid) return;
 
         platformGrid.innerHTML = "";
+        if (!content) return;
+
         PLATFORMS.forEach((platform) => {
             const label = document.createElement("label");
             label.className = "platform-item";
@@ -719,7 +1315,7 @@
     }
 
     function togglePlatform(platform, checked) {
-        const content = getCurrentContent();
+        const content = ensureCurrentContent(true);
         if (!content) return;
         if (checked) {
             if (!content.platforms.includes(platform)) {
@@ -759,12 +1355,160 @@
         });
     }
 
+    function setBulkShotState(message, isError) {
+        const el = document.getElementById("bulk-shot-state");
+        if (!el) return;
+        if (!message) {
+            el.textContent = "";
+            el.classList.add("hidden");
+            el.classList.remove("err");
+            return;
+        }
+        el.textContent = message;
+        el.classList.remove("hidden");
+        el.classList.toggle("err", !!isError);
+    }
+
+    function toggleBulkShotImport() {
+        const input = document.getElementById("bulk-shot-input");
+        if (!input) return;
+        input.classList.toggle("hidden");
+        if (!input.classList.contains("hidden")) {
+            input.focus();
+        }
+    }
+
+    function stripWrappedQuotes(text) {
+        return String(text || "").trim().replace(/^["“”']+|["“”']+$/g, "").trim();
+    }
+
+    function cleanShotValue(text) {
+        return stripWrappedQuotes(String(text || "").replace(/\s+/g, " "));
+    }
+
+    function appendShotField(shot, field, value) {
+        const clean = cleanShotValue(value);
+        if (!clean) return;
+        shot[field] = shot[field] && !isTemplateEditableText(shot[field])
+            ? shot[field] + " " + clean
+            : clean;
+    }
+
+    function parseBulkShots(rawText) {
+        const lines = String(rawText || "").replace(/\r\n/g, "\n").split("\n");
+        const result = {
+            headline: "",
+            shots: []
+        };
+        let current = null;
+        let activeField = "";
+
+        function pushCurrent() {
+            if (!current) return;
+            current.title = cleanShotValue(current.title) || "Shot " + (result.shots.length + 1) + ": ...";
+            current.speech = cleanShotValue(current.speech) || "พิมพ์บทพูดที่นี่...";
+            current.onScreen = cleanShotValue(current.onScreen) || "ข้อความบนจอ...";
+            result.shots.push(current);
+        }
+
+        lines.forEach((line) => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            const shotMatch = trimmed.match(/^Shot\s*(\d+)\s*(.*)$/i);
+            if (shotMatch) {
+                pushCurrent();
+                const shotNumber = Number(shotMatch[1]) || (result.shots.length + 1);
+                const shotDetail = cleanShotValue(shotMatch[2].replace(/^\(|\)$/g, ""));
+                current = {
+                    title: "Shot " + shotNumber + (shotDetail ? ": " + shotDetail : ": ..."),
+                    speech: "",
+                    onScreen: ""
+                };
+                activeField = "";
+                return;
+            }
+
+            if (!current && !result.headline) {
+                result.headline = cleanShotValue(trimmed.replace(/^บทพูด\s*/i, ""));
+                return;
+            }
+
+            if (!current) return;
+
+            const imageMatch = trimmed.match(/^ภาพ\s*:\s*(.*)$/i);
+            if (imageMatch) {
+                const imageText = cleanShotValue(imageMatch[1]);
+                if (imageText) {
+                    current.title = current.title && !/:\s*\.\.\.$/.test(current.title)
+                        ? current.title + " | ภาพ: " + imageText
+                        : "Shot " + (result.shots.length + 1) + ": " + imageText;
+                }
+                activeField = "title";
+                return;
+            }
+
+            const speechMatch = trimmed.match(/^บทพูด\s*:\s*(.*)$/i);
+            if (speechMatch) {
+                appendShotField(current, "speech", speechMatch[1]);
+                activeField = "speech";
+                return;
+            }
+
+            const screenMatch = trimmed.match(/^Text\s*บนจอ\s*:\s*(.*)$/i);
+            if (screenMatch) {
+                appendShotField(current, "onScreen", screenMatch[1]);
+                activeField = "onScreen";
+                return;
+            }
+
+            if (activeField === "speech" || activeField === "onScreen") {
+                appendShotField(current, activeField, trimmed);
+            }
+        });
+
+        pushCurrent();
+        return result;
+    }
+
+    function importBulkShots() {
+        const input = document.getElementById("bulk-shot-input");
+        if (!input) return;
+        const content = ensureCurrentContent(true);
+        if (!content || normalizeContentType(content.type) !== "Video") {
+            setBulkShotState("Import ใช้ได้เฉพาะ Video เท่านั้น", true);
+            return;
+        }
+        const parsed = parseBulkShots(input.value);
+        if (!parsed.shots.length) {
+            setBulkShotState("ไม่เจอรูปแบบ Shot ในข้อความที่วาง", true);
+            return;
+        }
+        content.shots = parsed.shots;
+        if (parsed.headline && (!normalizeEditableText(content.headline) || isTemplateEditableText(normalizeEditableText(content.headline)))) {
+            content.headline = parsed.headline;
+        }
+        renderEditorContent();
+        renderCalendar();
+        input.value = "";
+        input.classList.add("hidden");
+        setBulkShotState("Import แล้ว " + parsed.shots.length + " shots", false);
+        queueSaveLabel(true);
+    }
+
     function renderCover() {
         const content = getCurrentContent();
         const uploadText = document.getElementById("cover-upload-text");
         const removeBtn = document.getElementById("cover-remove-btn");
         const gallery = document.getElementById("cover-gallery");
-        if (!content) return;
+        if (!content) {
+            if (uploadText) uploadText.classList.remove("hidden");
+            if (removeBtn) removeBtn.classList.add("hidden");
+            if (gallery) {
+                gallery.innerHTML = `<p class="cover-empty-note">No image resources uploaded yet.</p>`;
+            }
+            return;
+        }
 
         const images = Array.isArray(content.coverImages) ? content.coverImages : [];
         if (images.length > 0) {
@@ -797,7 +1541,12 @@
         const content = getCurrentContent();
         const statusSelect = document.getElementById("day-status-select");
         const prioritySelect = document.getElementById("day-priority-select");
-        if (!statusSelect || !prioritySelect || !content) return;
+        if (!statusSelect || !prioritySelect) return;
+        if (!content) {
+            statusSelect.value = "Draft";
+            prioritySelect.value = "Priority";
+            return;
+        }
         statusSelect.value = content.status || "Draft";
         prioritySelect.value = content.priority || "Priority";
     }
@@ -805,12 +1554,27 @@
     function renderEditorContent() {
         const day = getCurrentDayState();
         const content = getCurrentContent(day);
-        if (!content) return;
+        if (!content) {
+            renderContentSelector();
+            const titleField = document.getElementById("current-day-title");
+            const descField = document.getElementById("current-day-desc");
+            const bottomDetailField = document.getElementById("non-video-detail-field");
+            if (titleField) titleField.innerText = "No content yet";
+            if (descField) descField.innerText = "Click Add Content to start";
+            if (bottomDetailField) bottomDetailField.innerText = "Click Add Content to start";
+            renderContentTypeControl();
+            renderDayMetaControls();
+            renderPlatformControls();
+            renderCover();
+            renderShots();
+            return;
+        }
         document.getElementById("current-day-title").innerText = content.headline;
-        document.getElementById("current-day-desc").innerText = content.description;
+        document.getElementById("current-day-title").innerText = content.headline || "Type headline here";
+        document.getElementById("current-day-desc").innerText = content.description || "Type detail here";
         const bottomDetailField = document.getElementById("non-video-detail-field");
         if (bottomDetailField) {
-            bottomDetailField.innerText = content.description;
+            bottomDetailField.innerText = content.description || "Type detail here";
         }
         renderContentSelector();
         renderContentTypeControl();
@@ -898,6 +1662,50 @@
         }
     }
 
+    function copyTextFallback(text) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand("copy");
+        } finally {
+            document.body.removeChild(textarea);
+        }
+    }
+
+    async function copyReadText(button) {
+        if (!button) return;
+        const text = button.dataset.copy || "";
+        const originalText = button.innerHTML;
+        const originalLabel = button.getAttribute("aria-label") || "Copy";
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                copyTextFallback(text);
+            }
+            button.innerHTML = "✓";
+            button.setAttribute("aria-label", "Copied");
+            button.classList.add("copied");
+            window.setTimeout(() => {
+                button.innerHTML = originalText || "⧉";
+                button.setAttribute("aria-label", originalLabel);
+                button.classList.remove("copied");
+            }, 900);
+        } catch (error) {
+            button.innerHTML = "!";
+            button.setAttribute("aria-label", "Copy failed");
+            window.setTimeout(() => {
+                button.innerHTML = originalText || "⧉";
+                button.setAttribute("aria-label", originalLabel);
+            }, 900);
+        }
+    }
+
     function openContentFlow(contentId) {
         const day = getCurrentDayState();
         if (!day) return;
@@ -924,18 +1732,30 @@
         const shotsHtml = (Array.isArray(content.shots) ? content.shots : []).map((shot) => {
             const speech = escapeHtml(shot.speech || "").replaceAll("\n", "<br>");
             const onScreen = escapeHtml(shot.onScreen || "").replaceAll("\n", "<br>");
+            const speechCopy = escapeHtml(shot.speech || "");
+            const onScreenCopy = escapeHtml(shot.onScreen || "");
             return `
                 <div class="read-shot-card">
                     <div class="read-shot-head">
                         <h3 class="read-shot-title">${escapeHtml(shot.title || "Shot")}</h3>
                     </div>
                     <div class="read-row">
-                        <strong>🎬 บทพูด</strong>
-                        <p>${speech || "-"}</p>
+                        <div class="read-row-head">
+                            <strong>🎬 บทพูด</strong>
+                        </div>
+                        <div class="read-copy-field">
+                            <p>${speech || "-"}</p>
+                            <button type="button" class="copy-read-btn" data-copy="${speechCopy}" onclick="copyReadText(this)" aria-label="Copy บทพูด" title="Copy บทพูด">⧉</button>
+                        </div>
                     </div>
                     <div class="read-row">
-                        <strong>📝 Text บนจอ</strong>
-                        <p>${onScreen || "-"}</p>
+                        <div class="read-row-head">
+                            <strong>📝 Text บนจอ</strong>
+                        </div>
+                        <div class="read-copy-field">
+                            <p>${onScreen || "-"}</p>
+                            <button type="button" class="copy-read-btn" data-copy="${onScreenCopy}" onclick="copyReadText(this)" aria-label="Copy Text บนจอ" title="Copy Text บนจอ">⧉</button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -990,7 +1810,7 @@
     function openDayAction(dateKey) {
         actionDateKey = resolveDateKey(dateKey);
         if (!actionDateKey) return;
-        const item = contentByDate.get(actionDateKey);
+        const item = isTeamBContext() ? null : contentByDate.get(actionDateKey);
         const dateText = formatContentDate(parseDateKey(actionDateKey));
         const dayData = appState.days[actionDateKey] ? normalizeDayState(appState.days[actionDateKey], actionDateKey) : null;
         const existingHeadline = dayData && dayData.contents && dayData.contents[0]
@@ -1033,6 +1853,7 @@
         currentDateKey = resolved;
         getCurrentDayState();
         document.getElementById("calendar-view").classList.add("hidden");
+        document.getElementById("social-inbox-view").classList.add("hidden");
         document.getElementById("storyboard-view").classList.remove("hidden");
         document.getElementById("save-state").textContent = "พร้อมแก้ไข";
         closeContentCardsModal();
@@ -1051,13 +1872,31 @@
         closeContentCardsModal();
         closeContentFlowModal();
         document.getElementById("storyboard-view").classList.add("hidden");
+        document.getElementById("social-inbox-view").classList.add("hidden");
         document.getElementById("calendar-view").classList.remove("hidden");
         renderCalendar();
         window.scrollTo(0, 0);
     }
 
+    function showSocialInbox() {
+        if (!isTeamAActive()) {
+            showCalendar();
+            return;
+        }
+        currentDateKey = null;
+        closeDayAction();
+        closeContentCardsModal();
+        closeContentFlowModal();
+        document.getElementById("calendar-view").classList.add("hidden");
+        document.getElementById("storyboard-view").classList.add("hidden");
+        document.getElementById("social-inbox-view").classList.remove("hidden");
+        renderSocialInbox();
+        loadSocialInbox();
+        window.scrollTo(0, 0);
+    }
+
     function updateDayField(field, value) {
-        const content = getCurrentContent();
+        const content = ensureCurrentContent(true);
         if (!content) return;
         content[field] = value;
         renderContentSelector();
@@ -1065,7 +1904,7 @@
     }
 
     function updateDayMeta(field, value) {
-        const content = getCurrentContent();
+        const content = ensureCurrentContent(true);
         if (!content) return;
         content[field] = value;
         renderCalendar();
@@ -1073,7 +1912,7 @@
     }
 
     function updateContentType(value) {
-        const content = getCurrentContent();
+        const content = ensureCurrentContent(true);
         if (!content) return;
         const nextType = normalizeContentType(value);
         const prevType = normalizeContentType(content.type);
@@ -1091,16 +1930,17 @@
     }
 
     function updateShotField(index, field, value) {
-        const content = getCurrentContent();
+        const content = ensureCurrentContent(true);
         if (!content || normalizeContentType(content.type) !== "Video" || !content.shots[index]) return;
         content.shots[index][field] = value;
         queueSaveLabel(true);
     }
 
     function addShot() {
-        const content = getCurrentContent();
+        const content = ensureCurrentContent(true);
         if (!content || normalizeContentType(content.type) !== "Video") return;
         content.shots.push(defaultShot(content.shots.length + 1));
+        renderEditorContent();
         renderShots();
         queueSaveLabel(true);
     }
@@ -1119,32 +1959,46 @@
         if (!input.files || !input.files[0]) {
             return;
         }
-        const content = getCurrentContent();
+        const content = ensureCurrentContent(true);
         if (!content || !getTypeMeta(content.type).showCover) {
             input.value = "";
             return;
         }
-        const files = Array.from(input.files);
-        let pending = files.length;
-        const nextImages = new Array(files.length);
-        files.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                if (typeof e.target.result === "string" && e.target.result) {
-                    nextImages[index] = e.target.result;
-                }
-                pending -= 1;
-                if (pending > 0) return;
-                const content = getCurrentContent();
-                if (!content || !getTypeMeta(content.type).showCover) return;
-                content.coverImages = (Array.isArray(content.coverImages) ? content.coverImages : []).concat(nextImages.filter(Boolean));
-                content.coverImage = content.coverImages[0] || "";
-                renderCover();
-                queueSaveLabel(true);
-            };
-            reader.readAsDataURL(file);
+        const el = document.getElementById("save-state");
+        if (el) {
+            el.textContent = "Uploading images...";
+            el.classList.remove("ok");
+        }
+        const formData = new FormData();
+        Array.from(input.files).forEach((file) => {
+            formData.append("images", file);
         });
-        input.value = "";
+        apiFetch("/api/upload-images", {
+            method: "POST",
+            body: formData
+        }, 15000).then(async (response) => {
+            if (!response.ok) {
+                throw new Error("Request failed: " + response.status);
+            }
+            return response.json();
+        }).then((payload) => {
+            const current = getCurrentContent();
+            if (!current || !getTypeMeta(current.type).showCover) return;
+            const urls = Array.isArray(payload && payload.images)
+                ? payload.images.map((item) => item && item.url).filter(Boolean)
+                : [];
+            current.coverImages = (Array.isArray(current.coverImages) ? current.coverImages : []).concat(urls);
+            current.coverImage = current.coverImages[0] || "";
+            renderCover();
+            queueSaveLabel(true);
+        }).catch(() => {
+            if (el) {
+                el.textContent = "Upload failed";
+                el.classList.remove("ok");
+            }
+        }).finally(() => {
+            input.value = "";
+        });
     }
 
     function removeCoverImage(index) {
@@ -1165,9 +2019,9 @@
         queueSaveLabel(true);
     }
 
-    function saveCurrentDay() {
+    async function saveCurrentDay() {
         markPendingEditNotification("saved");
-        persistState(true);
+        await persistState(true);
         renderCalendar();
     }
 
@@ -1180,8 +2034,112 @@
         queueSaveLabel(true);
     }
 
+    async function bootstrapAuthorizedTeam() {
+        appState = shouldImportLocalBackup() ? loadLocalState() : { days: {} };
+        renderCalendar();
+        showAppShell();
+        try {
+            appState = await loadState();
+            renderCalendar();
+        } catch (error) {
+            if (error && error.code === "UNAUTHORIZED") {
+                logoutTeam("Your session expired. Enter the team password again.");
+                return;
+            }
+            renderCalendar();
+        }
+    }
+
+    async function submitTeamAccess() {
+        const passwordInput = document.getElementById("team-password");
+        const submitButton = document.getElementById("auth-submit");
+        const teamKey = normalizeTeamKey(selectedTeamKey || TEAM_A_KEY);
+        const password = passwordInput ? passwordInput.value : "";
+
+        setAuthError("");
+        if (!selectedTeamKey) {
+            setAuthError("Select TEAM A or TEAM B first.");
+            return;
+        }
+        if (!password.trim()) {
+            setAuthError("Enter the password for the selected team.");
+            if (passwordInput) passwordInput.focus();
+            return;
+        }
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Checking...";
+        }
+
+        try {
+            const response = await fetchWithTimeout("/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    team: teamKey,
+                    password
+                })
+            }, 8000);
+            const payload = await response.json();
+            if (!response.ok || !payload || !payload.ok || !payload.token || !payload.team) {
+                throw new Error(payload && payload.error ? payload.error : "Login failed");
+            }
+            authToken = payload.token;
+            setActiveTeam(payload.team.key, payload.team.label);
+            saveAuthSession();
+            if (passwordInput) {
+                passwordInput.value = "";
+            }
+            await bootstrapAuthorizedTeam();
+        } catch (error) {
+            setAuthError(error && error.message ? error.message : "Login failed");
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = "Enter Calendar";
+            }
+        }
+    }
+
+    function logoutTeam(message) {
+        clearAuthSession();
+        selectedTeamKey = "";
+        appState = { days: {} };
+        currentDateKey = null;
+        actionDateKey = null;
+        pendingEditNotification = null;
+        closeAllModals();
+        document.getElementById("storyboard-view").classList.add("hidden");
+        document.getElementById("social-inbox-view").classList.add("hidden");
+        document.getElementById("calendar-view").classList.remove("hidden");
+        showAuthGate();
+        const passwordInput = document.getElementById("team-password");
+        if (passwordInput) {
+            passwordInput.value = "";
+        }
+        updateTeamSelectionUI();
+        setAuthError(message || "");
+    }
+
     window.onload = function() {
         initTheme();
         setTelegramState("");
-        renderCalendar();
+        const passwordInput = document.getElementById("team-password");
+        if (passwordInput) {
+            passwordInput.addEventListener("keydown", function(event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    submitTeamAccess();
+                }
+            });
+        }
+        const savedAuth = loadAuthSession();
+        if (!savedAuth) {
+            showAuthGate();
+            return;
+        }
+        authToken = savedAuth.token;
+        setActiveTeam(savedAuth.teamKey, savedAuth.teamLabel);
+        bootstrapAuthorizedTeam();
     };
