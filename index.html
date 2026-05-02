@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adstomate 30-Day Content Planner</title>
-    <link rel="stylesheet" href="assets/css/styles.css?v=20260502-copy-icon-fields">
+    <link rel="stylesheet" href="assets/css/styles.css?v=20260502-delete-modal">
 </head>
 <body>
 <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Dark Theme</button>
@@ -119,7 +119,12 @@
                     <option value="Post Text">Post Text</option>
                 </select>
                 <button type="button" onclick="addContentItem()">+ Add Content</button>
-                <button type="button" onclick="removeCurrentContent()">Delete Content</button>
+                <label class="move-content-control">
+                    <span>Move to</span>
+                    <input id="move-content-date" type="date" onchange="updateMoveDateLabel()">
+                </label>
+                <button type="button" onclick="moveCurrentContentToDate()">Move</button>
+                <button type="button" class="btn-danger" onclick="requestDeleteCurrentContent()">Delete Content</button>
             </div>
             <h1 id="current-day-title" contenteditable="true" onfocus="beginQuickEdit(this)" oninput="updateDayField('headline', this.innerText)">Day X: หัวข้อคลิป</h1>
             <div id="top-detail-section">
@@ -130,6 +135,7 @@
             <div class="day-meta-controls">
                 <select id="day-status-select" onchange="updateDayMeta('status', this.value)">
                     <option value="Draft">📍 Draft</option>
+                    <option value="Schedule">📅 Schedule</option>
                     <option value="Ready">📍 Ready</option>
                     <option value="Done">📍 Done</option>
                 </select>
@@ -188,6 +194,17 @@
     </div>
 </div>
 
+<div id="delete-content-modal" class="action-modal hidden" onclick="handleDeleteContentModalClick(event)">
+    <div class="action-panel delete-confirm-panel">
+        <h3 class="action-title">Delete Content</h3>
+        <p id="delete-content-message" class="action-sub">Delete this content?</p>
+        <div class="action-buttons">
+            <button type="button" onclick="closeDeleteContentModal()">Cancel</button>
+            <button type="button" class="btn-danger" onclick="confirmDeleteCurrentContent()">Delete</button>
+        </div>
+    </div>
+</div>
+
 <div id="content-cards-modal" class="content-modal hidden" onclick="handleContentCardsModalClick(event)">
     <div class="content-modal-panel">
         <div class="content-modal-head">
@@ -224,6 +241,6 @@
     </div>
 </div>
 
-<script src="assets/js/app.js?v=20260502-copy-icon-fields"></script>
+<script src="assets/js/app.js?v=20260502-delete-modal"></script>
 </body>
 </html>

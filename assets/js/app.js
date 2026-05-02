@@ -217,6 +217,7 @@
 
     function closeAllModals() {
         closeDayAction();
+        closeDeleteContentModal();
         closeContentCardsModal();
         closeContentFlowModal();
     }
@@ -541,6 +542,14 @@
         };
     }
 
+    function buildMovePayload(fromDateKey, toDateKey, content) {
+        const payload = buildContentPayload(toDateKey, content, "moved");
+        if (!payload) return null;
+        payload.fromDateKey = fromDateKey;
+        payload.fromDateLabel = formatContentDate(parseDateKey(fromDateKey));
+        return payload;
+    }
+
     function getCurrentContentPayload(reason) {
         const dateKey = resolveDateKey(currentDateKey);
         const content = getCurrentContent();
@@ -553,8 +562,10 @@
             header = "➕ Content Added";
         } else if (action === "save") {
             header = "💾 Content Saved";
+        } else if (action === "move") {
+            header = "↔ Content Moved";
         }
-        return [
+        const lines = [
             header,
             "Date: " + payload.dateLabel + " (" + payload.dateKey + ")",
             "Headline: " + payload.headline,
@@ -562,7 +573,11 @@
             "Status: " + payload.status,
             "Priority: " + payload.priority,
             "Platforms: " + formatPlatforms(payload.platforms)
-        ].join("\n");
+        ];
+        if (payload.fromDateKey) {
+            lines.splice(2, 0, "From: " + payload.fromDateLabel + " (" + payload.fromDateKey + ")");
+        }
+        return lines.join("\n");
     }
 
     async function sendTelegramNotification(action, payload) {
@@ -614,7 +629,9 @@
             if (sendEditNotification && pendingEditNotification) {
                 const payload = pendingEditNotification;
                 pendingEditNotification = null;
-                const action = payload.reason === "saved" ? "save" : "edit";
+                const action = payload.reason === "saved"
+                    ? "save"
+                    : (payload.reason === "moved" ? "move" : "edit");
                 sendTelegramNotification(action, payload);
             }
         } catch (e) {
@@ -1033,13 +1050,10 @@
         if (Array.isArray(rawDay.contents)) {
             const contents = rawDay.contents.map((content, idx) => normalizeContentItem(content, dateKey, idx));
             if (contents.length === 0) {
-                if (isTeamBContext()) {
-                    return {
-                        selectedContentId: "",
-                        contents: []
-                    };
-                }
-                contents.push(defaultContent(dateKey, 1));
+                return {
+                    selectedContentId: "",
+                    contents: []
+                };
             }
             const selectedId = contents.some((c) => c.id === rawDay.selectedContentId)
                 ? rawDay.selectedContentId
@@ -1108,7 +1122,7 @@
         if (!dayData || !Array.isArray(dayData.contents) || dayData.contents.length === 0) return "";
         const statuses = dayData.contents.map((content) => content.status || "Draft");
         if (statuses.every((status) => status === "Done")) return "Done";
-        if (statuses.some((status) => status === "Ready" || status === "Done")) return "In Progress";
+        if (statuses.some((status) => status === "Schedule" || status === "Ready" || status === "Done")) return "In Progress";
         return "Draft";
     }
 
@@ -1165,14 +1179,12 @@
             const contentCount = dayData && Array.isArray(dayData.contents) ? dayData.contents.length : 0;
             const tagText = contentCount > 0
                 ? (contentCount + (contentCount > 1 ? " contents" : " content"))
-                : (contentItem ? ("Day " + contentItem.dayNum) : "");
+                : "";
             const tagHtml = tagText ? `<div class="content-day-tag">${escapeHtml(tagText)}</div>` : "";
 
-            let titleText = "Add content...";
+            let titleText = "";
             if (contentCount > 0) {
                 titleText = dayData.contents[0].headline || titleText;
-            } else if (contentItem) {
-                titleText = contentItem.title;
             }
 
             card.className = "day-cell";
@@ -1219,6 +1231,18 @@
         const typeSelect = document.getElementById("content-type-select");
         if (!typeSelect || !content) return;
         typeSelect.value = normalizeContentType(content.type);
+    }
+
+    function renderMoveDateControl() {
+        const input = document.getElementById("move-content-date");
+        if (!input) return;
+        input.value = resolveDateKey(currentDateKey) || "";
+    }
+
+    function updateMoveDateLabel() {
+        const input = document.getElementById("move-content-date");
+        if (!input || !input.value) return;
+        input.value = resolveDateKey(input.value) || "";
     }
 
     function applyContentTypeUI(content) {
@@ -1274,17 +1298,98 @@
         queueSaveLabel(false);
     }
 
+    function requestDeleteCurrentContent() {
+        const day = getCurrentDayState();
+        if (!day || !Array.isArray(day.contents) || day.contents.length === 0) return;
+        const content = getCurrentContent(day);
+        const message = document.getElementById("delete-content-message");
+        if (message) {
+            const label = content && normalizeEditableText(content.headline)
+                ? normalizeEditableText(content.headline)
+                : "this content";
+            message.innerText = "Delete " + label + "?";
+        }
+        document.getElementById("delete-content-modal").classList.remove("hidden");
+    }
+
+    function closeDeleteContentModal() {
+        const modal = document.getElementById("delete-content-modal");
+        if (modal) modal.classList.add("hidden");
+    }
+
+    function handleDeleteContentModalClick(event) {
+        if (event.target && event.target.id === "delete-content-modal") {
+            closeDeleteContentModal();
+        }
+    }
+
+    function confirmDeleteCurrentContent() {
+        closeDeleteContentModal();
+        removeCurrentContent();
+    }
+
     function removeCurrentContent() {
         const day = getCurrentDayState();
-        if (!day || day.contents.length <= 1) return;
-        if (!window.confirm("Delete this content?")) return;
+        if (!day || !Array.isArray(day.contents) || day.contents.length === 0) return;
         const idx = day.contents.findIndex((content) => content.id === day.selectedContentId);
         const removeIdx = idx >= 0 ? idx : 0;
         day.contents.splice(removeIdx, 1);
-        day.selectedContentId = day.contents[Math.max(0, removeIdx - 1)].id;
+        day.selectedContentId = day.contents.length > 0
+            ? day.contents[Math.max(0, removeIdx - 1)].id
+            : "";
         renderEditorContent();
         renderCalendar();
         queueSaveLabel(true);
+    }
+
+    function getDayStateForMove(dateKey) {
+        const key = resolveDateKey(dateKey);
+        if (!key) return null;
+        if (!appState.days[key]) {
+            appState.days[key] = {
+                selectedContentId: "",
+                contents: []
+            };
+        } else {
+            appState.days[key] = normalizeDayState(appState.days[key], key);
+        }
+        return appState.days[key];
+    }
+
+    function moveCurrentContentToDate() {
+        const sourceKey = resolveDateKey(currentDateKey);
+        const input = document.getElementById("move-content-date");
+        const targetKey = resolveDateKey(input && input.value);
+        if (!sourceKey || !targetKey) return;
+        if (sourceKey === targetKey) {
+            flashSaveState("Already on this day");
+            return;
+        }
+
+        const sourceDay = getCurrentDayState();
+        const content = getCurrentContent(sourceDay);
+        if (!sourceDay || !content) return;
+
+        const sourceIdx = sourceDay.contents.findIndex((item) => item.id === content.id);
+        if (sourceIdx < 0) return;
+
+        const movedContent = sourceDay.contents.splice(sourceIdx, 1)[0];
+        if (sourceDay.contents.length > 0) {
+            sourceDay.selectedContentId = sourceDay.contents[Math.max(0, sourceIdx - 1)].id;
+        } else {
+            sourceDay.selectedContentId = "";
+        }
+
+        const targetDay = getDayStateForMove(targetKey);
+        targetDay.contents.push(movedContent);
+        targetDay.selectedContentId = movedContent.id;
+        currentDateKey = targetKey;
+        viewedMonth = new Date(parseDateKey(targetKey).getFullYear(), parseDateKey(targetKey).getMonth(), 1);
+        pendingEditNotification = buildMovePayload(sourceKey, targetKey, movedContent);
+
+        renderEditorContent();
+        renderCalendar();
+        persistState(true);
     }
 
     function renderPlatformControls() {
@@ -1578,6 +1683,7 @@
         }
         renderContentSelector();
         renderContentTypeControl();
+        renderMoveDateControl();
         applyContentTypeUI(content);
         renderDayMetaControls();
         renderPlatformControls();

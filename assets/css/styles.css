@@ -538,6 +538,17 @@
             box-shadow: 0 0 18px color-mix(in oklab, var(--accent) 42%, transparent);
         }
 
+        .btn-danger {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border: 1px solid var(--danger-border);
+        }
+
+        .btn-danger:hover {
+            border-color: var(--danger-text);
+            box-shadow: 0 0 12px color-mix(in oklab, var(--danger-text) 24%, transparent);
+        }
+
         .save-state {
             font-size: 0.78rem;
             color: var(--muted);
@@ -684,6 +695,19 @@
 
         .content-type-select {
             min-width: 140px;
+        }
+
+        .move-content-control {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .move-content-control input {
+            min-width: 145px;
         }
 
         .field-label {
@@ -897,6 +921,11 @@
             border-radius: 0.85rem;
             padding: 1rem;
             box-shadow: 0 0 25px color-mix(in oklab, var(--accent) 16%, transparent);
+        }
+
+        .delete-confirm-panel {
+            border-color: var(--danger-border);
+            box-shadow: 0 0 25px color-mix(in oklab, var(--danger-text) 18%, transparent);
         }
 
         .action-title {
