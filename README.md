@@ -1,168 +1,112 @@
-# Content-Calendar
+# Content Calendar
 
-Content calendar app for a Linux server.
+Private content planning app for Adstomate.
 
-## Stack
+## Current Setup
 
-- HTML
-- CSS
-- Vanilla JavaScript
-- Node.js
-- Express
-- Multer
-- server-side JSON state storage
-- local disk image uploads
+- Frontend: plain HTML, CSS, and vanilla JavaScript
+- Backend: Node.js + Express
+- Uploads: Multer, stored on local disk
+- Runtime: PM2 process named `content-calendar`
+- Public domain: `content-calendar.online`
+- Reverse proxy: Apache to `127.0.0.1:3100`
+- Login: TEAM A password only
 
-## What changed
+## Important Files
 
-- Team A state is saved on the server in `data/state.json`
-- Team B state is saved on the server in `data/team-b-state.json`
-- Uploaded images are saved on the server in `uploads/`
-- Images are served publicly from `/uploads/...`
-- Browser `localStorage` is now only a fallback/local backup
+- `index.html`: main app shell
+- `assets/js/app.js`: calendar, editor, auth, uploads, Social Inbox UI
+- `assets/css/styles.css`: app styling
+- `server.js`: Express server and API routes
+- `api/telegram-notify.js`: Telegram notification route handler
+- `ecosystem.config.js`: local PM2 runtime config
+- `deploy/apache/content-calendar.online.conf`: Apache reverse proxy example for this domain
 
-## Local run
+## Runtime Data
 
-1. Install Node.js 18 or newer.
-2. Install dependencies:
+These folders/files are intentionally not committed:
 
-```bash
-npm install
-```
+- `data/state.json`: saved TEAM A calendar content
+- `data/social-inbox.json`: Social Inbox connection and message state
+- `uploads/`: uploaded image resources
+- `backups/`: local backups
+- `ecosystem.config.js`: ignored because it can contain real passwords and API secrets
 
-3. Start the server:
+Back up `data/` and `uploads/` before moving servers or doing risky maintenance.
 
-```bash
-npm start
-```
+## Local Run
 
-If port `3000` is already in use, run on another port:
-
-```bash
-PORT=3100 npm start
-```
-
-4. Open:
-
-```text
-http://localhost:3000
-```
-
-## Important folders
-
-- `server.js`: Linux app server
-- `data/state.json`: TEAM A saved calendar content
-- `data/team-b-state.json`: TEAM B saved calendar content
-- `uploads/`: uploaded image files
-- `ecosystem.config.js`: PM2 config for port `3100`
-- `deploy/nginx/content-calendar.online.conf`: ready nginx config for your domain
-- `deploy/apache/content-calendar.online.conf`: ready Apache vhost for your domain
-
-## Environment variables
-
-Optional:
-
-- `PORT=3000`
-- `HOST=0.0.0.0`
-- `TEAM_A_PASSWORD`
-- `TEAM_B_PASSWORD`
-- `TELEGRAM_BOT_TOKEN`
-- `TELEGRAM_CHAT_ID`
-
-If you do not set team passwords in the environment, the defaults are:
-
-- `TEAM A`: `team-a`
-- `TEAM B`: `team-b`
-
-## Make it public on your Linux server
-
-### Quick test by IP
-
-Run the app:
+Install dependencies:
 
 ```bash
 npm install
-pm2 start ecosystem.config.js
 ```
 
-Open your firewall:
+Start locally:
 
 ```bash
-sudo ufw allow 3100/tcp
+TEAM_A_PASSWORD="your-password" PORT=3100 npm start
 ```
 
-Then visit:
+Open:
 
 ```text
-http://YOUR_SERVER_IP:3100
+http://localhost:3100
 ```
 
-### Recommended production setup
+## Production Run
 
-Use `nginx` in front of Node so your site is public on port 80 or 443.
-
-1. Install `nginx`
-2. Run this app on `127.0.0.1:3100` with `pm2 start ecosystem.config.js`
-3. Reverse proxy from `nginx` to Node
-4. Point your domain DNS to the server IP
-5. Add HTTPS with Let's Encrypt
-
-Ready config in repo:
-
-```text
-deploy/nginx/content-calendar.online.conf
-```
-
-Example nginx config:
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com www.your-domain.com;
-
-    client_max_body_size 20M;
-
-    location / {
-        proxy_pass http://127.0.0.1:3100;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-Reload nginx:
+The live app runs with PM2:
 
 ```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### Add HTTPS
-
-If your domain already points to the server:
-
-```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d your-domain.com -d www.your-domain.com
-```
-
-## Keep it running after logout
-
-Use `pm2` or `systemd`.
-
-Example with pm2:
-
-```bash
-npm install -g pm2
 pm2 start ecosystem.config.js
 pm2 save
-pm2 startup
 ```
 
-## Notes
+Useful checks:
 
-- `uploads/` is ignored by git on purpose
-- back up `data/state.json`, `data/team-b-state.json`, and `uploads/` if you want durable content storage
-- if you move servers, copy both folders
+```bash
+pm2 describe content-calendar
+curl -s http://127.0.0.1:3100/api/health
+```
+
+Restart after code changes:
+
+```bash
+pm2 restart content-calendar
+```
+
+## Environment Variables
+
+Core:
+
+- `HOST`: usually `0.0.0.0`
+- `PORT`: live app uses `3100`
+- `TEAM_A_PASSWORD`: password for the only active login
+
+Optional integrations:
+
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- `META_APP_ID`
+- `META_APP_SECRET`
+- `META_REDIRECT_URI`
+- `PUBLIC_BASE_URL`
+- `SOCIAL_TOKEN_ENCRYPTION_KEY`
+- `META_WEBHOOK_VERIFY_TOKEN`
+
+## Apache
+
+This project uses Apache as the public reverse proxy. The app itself listens on port `3100`; Apache serves the domain and proxies traffic to Node.
+
+Config reference:
+
+```text
+deploy/apache/content-calendar.online.conf
+```
+
+Smoke test after Apache or PM2 changes:
+
+```bash
+curl -s https://content-calendar.online/api/health
+```

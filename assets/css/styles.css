@@ -135,38 +135,6 @@
             padding: 1.2rem;
         }
 
-        .team-picker {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.8rem;
-            width: 100%;
-        }
-
-        .team-choice {
-            min-height: 190px;
-            border-radius: 1rem;
-            border: 1px solid var(--line-2);
-            background: linear-gradient(180deg, var(--surface-soft) 0%, var(--panel) 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-            text-align: center;
-        }
-
-        .team-choice.active {
-            border-color: var(--accent);
-            background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 12%, var(--surface-soft)) 0%, var(--panel) 100%);
-            box-shadow: 0 0 18px color-mix(in oklab, var(--accent) 20%, transparent);
-        }
-
-        .team-choice-label {
-            font-family: "Silkscreen", sans-serif;
-            font-size: 1.2rem;
-            color: var(--title-soft);
-        }
-
         .auth-password-step {
             display: flex;
             flex-direction: column;
@@ -184,11 +152,6 @@
         .auth-actions {
             display: flex;
             gap: 0.7rem;
-        }
-
-        .auth-back-btn {
-            flex: 1;
-            padding: 0.52rem 0.7rem;
         }
 
         .auth-input {
@@ -269,7 +232,7 @@
             flex-wrap: wrap;
         }
 
-        .team-badge {
+        .team-label-badge {
             font-size: 0.74rem;
             font-weight: 800;
             letter-spacing: 0.04em;
@@ -1381,8 +1344,6 @@
             body { padding: 1rem; }
             .auth-gate { min-height: calc(100vh - 2rem); }
             .auth-card { padding: 1rem; }
-            .team-picker { grid-template-columns: 1fr; }
-            .team-choice { min-height: 128px; }
             .auth-actions { flex-direction: column; }
             .shot-card { flex-direction: column; }
             .container { padding: 1rem; }

@@ -4,25 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adstomate 30-Day Content Planner</title>
-    <link rel="stylesheet" href="assets/css/styles.css?v=20260502-delete-modal">
+    <link rel="stylesheet" href="assets/css/styles.css?v=20260505-team-a-current-day">
 </head>
 <body>
 <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Dark Theme</button>
 <div id="auth-gate" class="auth-gate">
     <div class="auth-card auth-card-compact">
-        <div id="team-picker" class="team-picker">
-            <button type="button" class="team-choice" data-team="team-a" onclick="selectTeamCard('team-a')">
-                <span class="team-choice-label">TEAM A</span>
-            </button>
-            <button type="button" class="team-choice" data-team="team-b" onclick="selectTeamCard('team-b')">
-                <span class="team-choice-label">TEAM B</span>
-            </button>
-        </div>
-        <div id="auth-password-step" class="auth-password-step hidden">
+        <div id="auth-password-step" class="auth-password-step">
             <div id="selected-team-label" class="selected-team-label">TEAM A</div>
             <input id="team-password" class="auth-input" type="password" placeholder="Enter team password" autocomplete="current-password">
             <div class="auth-actions">
-                <button type="button" class="auth-back-btn" onclick="resetTeamSelection()">Back</button>
                 <button id="auth-submit" type="button" class="btn-primary auth-submit" onclick="submitTeamAccess()">Enter</button>
             </div>
         </div>
@@ -34,10 +25,10 @@
         <div class="calendar-topbar">
             <h1 class="brand-title"><span class="brand-icon">◉</span> Adstomate Content Calendar</h1>
             <div class="calendar-controls">
-                <div id="team-badge" class="team-badge">TEAM A</div>
-                <div id="month-label" class="month-label">APRIL 2026</div>
+                <div id="team-label-badge" class="team-label-badge">TEAM A</div>
+                <div id="month-label" class="month-label">CURRENT MONTH</div>
                 <button id="social-inbox-open-btn" type="button" onclick="showSocialInbox()">Social Inbox (In Maintenance)</button>
-                <button type="button" onclick="logoutTeam()">Switch Team</button>
+                <button type="button" onclick="logoutTeam()">Logout</button>
             </div>
         </div>
         <div class="calendar-shell">
@@ -241,6 +232,6 @@
     </div>
 </div>
 
-<script src="assets/js/app.js?v=20260502-delete-modal"></script>
+<script src="assets/js/app.js?v=20260505-team-a-current-day"></script>
 </body>
 </html>

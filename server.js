@@ -17,22 +17,15 @@ const META_GRAPH_BASE = "https://graph.facebook.com/" + META_GRAPH_VERSION;
 const META_AUTH_BASE = "https://www.facebook.com/" + META_GRAPH_VERSION + "/dialog/oauth";
 const META_OAUTH_STATES = new Map();
 const TEAM_A_KEY = "team-a";
-const TEAM_B_KEY = "team-b";
 const TEAM_CONFIG = {
     [TEAM_A_KEY]: {
         key: TEAM_A_KEY,
         label: "TEAM A",
         password: process.env.TEAM_A_PASSWORD || "team-a"
-    },
-    [TEAM_B_KEY]: {
-        key: TEAM_B_KEY,
-        label: "TEAM B",
-        password: process.env.TEAM_B_PASSWORD || "team-b"
     }
 };
 const TEAM_STATE_FILES = {
-    [TEAM_A_KEY]: path.join(DATA_DIR, "state.json"),
-    [TEAM_B_KEY]: path.join(DATA_DIR, "team-b-state.json")
+    [TEAM_A_KEY]: path.join(DATA_DIR, "state.json")
 };
 const activeSessions = new Map();
 

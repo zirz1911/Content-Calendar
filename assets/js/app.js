@@ -2,7 +2,6 @@
     const THEME_STORAGE_KEY = "content_calendar_theme";
     const AUTH_STORAGE_KEY = "content_calendar_auth_v1";
     const TEAM_A_KEY = "team-a";
-    const TEAM_B_KEY = "team-b";
     const plan30Days = [
         "ท่าแปลกแก้บัญชีบิน", "เลิกใช้ Chrome/Safari ฟาร์ม", "Proxy คืออะไร?",
         "วิธีเช็ค IP และลายนิ้วมือ", "จำลองคอม 100 เครื่อง", "mbasic ล็อกอินครั้งแรก",
@@ -43,12 +42,11 @@
 
     let appState = { days: {} };
     let authToken = "";
-    let selectedTeamKey = "";
     let currentTeamKey = "";
     let currentTeamLabel = "";
     let currentDateKey = null;
     let actionDateKey = null;
-    let viewedMonth = new Date(CONTENT_START_DATE.getFullYear(), CONTENT_START_DATE.getMonth(), 1);
+    let viewedMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     let saveTimer = null;
     let pendingEditNotification = null;
     let socialInbox = {
@@ -67,55 +65,29 @@
     ];
 
     function normalizeTeamKey(teamKey) {
-        return teamKey === TEAM_B_KEY ? TEAM_B_KEY : TEAM_A_KEY;
+        return TEAM_A_KEY;
     }
 
     function getTeamLabel(teamKey) {
-        return normalizeTeamKey(teamKey) === TEAM_B_KEY ? "TEAM B" : "TEAM A";
+        return "TEAM A";
     }
 
     function isTeamBContext() {
-        return normalizeTeamKey(currentTeamKey || selectedTeamKey || TEAM_A_KEY) === TEAM_B_KEY;
+        return false;
     }
 
     function shouldImportLocalBackup() {
-        return !isTeamBContext();
+        return true;
     }
 
     function updateTeamSelectionUI() {
-        const buttons = Array.from(document.querySelectorAll(".team-choice"));
-        buttons.forEach((button) => {
-            const isActive = button.dataset.team === selectedTeamKey;
-            button.classList.toggle("active", isActive);
-        });
         const passwordStep = document.getElementById("auth-password-step");
         const selectedLabel = document.getElementById("selected-team-label");
         if (passwordStep) {
-            passwordStep.classList.toggle("hidden", !selectedTeamKey);
+            passwordStep.classList.remove("hidden");
         }
         if (selectedLabel) {
-            selectedLabel.textContent = getTeamLabel(selectedTeamKey || TEAM_A_KEY);
-        }
-    }
-
-    function selectTeamCard(teamKey) {
-        selectedTeamKey = normalizeTeamKey(teamKey);
-        setAuthError("");
-        updateTeamSelectionUI();
-        const passwordInput = document.getElementById("team-password");
-        if (passwordInput) {
-            passwordInput.value = "";
-            passwordInput.focus();
-        }
-    }
-
-    function resetTeamSelection() {
-        selectedTeamKey = "";
-        setAuthError("");
-        updateTeamSelectionUI();
-        const passwordInput = document.getElementById("team-password");
-        if (passwordInput) {
-            passwordInput.value = "";
+            selectedLabel.textContent = getTeamLabel(TEAM_A_KEY);
         }
     }
 
@@ -124,13 +96,13 @@
     }
 
     function updateTeamBadge() {
-        const badge = document.getElementById("team-badge");
+        const badge = document.getElementById("team-label-badge");
         if (!badge) return;
         badge.textContent = currentTeamLabel || getTeamLabel(currentTeamKey);
     }
 
     function isTeamAActive() {
-        return normalizeTeamKey(currentTeamKey || selectedTeamKey || TEAM_A_KEY) === TEAM_A_KEY;
+        return true;
     }
 
     function updateSocialInboxAccessUI() {
@@ -293,20 +265,6 @@
     }
 
     function defaultContent(dateKey, idx) {
-        if (isTeamBContext()) {
-            return {
-                id: newId("content"),
-                type: "Video",
-                headline: "",
-                description: "",
-                status: "Draft",
-                priority: "Priority",
-                platforms: [],
-                coverImages: [],
-                coverImage: "",
-                shots: [defaultShot(1)]
-            };
-        }
         const suggested = contentByDate.get(dateKey);
         const dateObj = parseDateKey(dateKey);
         const suggestedHeadline = suggested ? ("Day " + suggested.dayNum + ": " + suggested.title) : "";
@@ -328,12 +286,6 @@
     }
 
     function defaultDay(dateKey) {
-        if (isTeamBContext()) {
-            return {
-                selectedContentId: "",
-                contents: []
-            };
-        }
         const content = defaultContent(dateKey, 1);
         return {
             selectedContentId: content.id,
@@ -1167,7 +1119,6 @@
 
             const cellDate = new Date(year, month, dayOfMonth);
             const dateKey = localDateKey(cellDate);
-            const contentItem = isTeamBContext() ? null : contentByDate.get(dateKey);
             let dayData = null;
             if (appState.days[dateKey]) {
                 dayData = normalizeDayState(appState.days[dateKey], dateKey);
@@ -2159,16 +2110,12 @@
     async function submitTeamAccess() {
         const passwordInput = document.getElementById("team-password");
         const submitButton = document.getElementById("auth-submit");
-        const teamKey = normalizeTeamKey(selectedTeamKey || TEAM_A_KEY);
+        const teamKey = TEAM_A_KEY;
         const password = passwordInput ? passwordInput.value : "";
 
         setAuthError("");
-        if (!selectedTeamKey) {
-            setAuthError("Select TEAM A or TEAM B first.");
-            return;
-        }
         if (!password.trim()) {
-            setAuthError("Enter the password for the selected team.");
+            setAuthError("Enter the TEAM A password.");
             if (passwordInput) passwordInput.focus();
             return;
         }
@@ -2210,7 +2157,6 @@
 
     function logoutTeam(message) {
         clearAuthSession();
-        selectedTeamKey = "";
         appState = { days: {} };
         currentDateKey = null;
         actionDateKey = null;
